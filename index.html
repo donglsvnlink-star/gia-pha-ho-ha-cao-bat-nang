@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sơ Đồ Ký Phả Họ Hà - Thôn Cao Bất Nang</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #fdfbf7;
+      --paper-2: #f5efe2;
+      --crimson: #8b1e1e;
+      --crimson-dark: #631212;
+      --gold: #c59b27;
+      --gold-light: #f4e7be;
+      --ink: #231914;
+      --muted: #6e5d52;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background-color: var(--paper);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    .font-serif-trad {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    .canvas-bg {
+      background-color: #f8f3e8;
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(139, 30, 30, 0.08) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+
+    .node-card {
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .node-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -8px rgba(99, 18, 18, 0.22);
+    }
+
+    .node-card:hover .quick-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .quick-actions {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .highlight-pulse {
+      animation: pulseGold 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulseGold {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(197, 155, 39, 0.75); }
+      50% { box-shadow: 0 0 0 10px rgba(197, 155, 39, 0); }
+    }
+
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f3ece0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c8b69b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #8b1e1e;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col select-none">
+
+  <!-- TOP HEADER -->
+  <header class="bg-[#631212] text-[#fdfbf7] border-b-2 border-[#c59b27] shadow-md z-30 shrink-0">
+    <div class="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-[#8b1e1e] border border-[#c59b27] flex items-center justify-center shadow-inner shrink-0">
+          <span class="font-serif-trad font-bold text-lg text-[#f4e7be]">Hà</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="font-serif-trad font-bold text-base sm:text-lg tracking-wide text-[#fff8e7]">
+              SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO BẤT NANG
+            </h1>
+            <span id="cloudStatusBadge" onclick="openCloudModal()" title="Nhấn để cấu hình Supabase" class="cursor-pointer text-[11px] px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-200 border border-amber-400/50 flex items-center gap-1.5">
+              <span id="cloudDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span id="cloudStatusText">Chế độ cục bộ (Chưa cấu hình Supabase)</span>
+            </span>
+          </div>
+          <p class="text-[11px] text-[#f3dfc1]">
+            Thủy Tổ: Hà Quý Công (Đời 1) • Tiền Tổ: Hà Quý Ngọc (Đời 2) • Cập nhật tới Đời 8
+          </p>
+        </div>
+      </div>
+
+      <!-- VIEW SWITCHER & MAIN ACTIONS -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <div class="bg-[#490b0b] p-0.5 rounded-lg border border-[#c59b27]/40 flex text-xs">
+          <button id="btnViewTree" onclick="switchView('tree')" class="px-2.5 py-1.5 rounded-md font-semibold bg-[#c59b27] text-[#231914] transition">
+            Sơ đồ cây
+          </button>
+          <button id="btnViewTable" onclick="switchView('table')" class="px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition">
+            Danh sách bảng
+          </button>
+        </div>
+
+        <button onclick="openAddModal(null)" class="px-3 py-1.5 rounded-lg bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-semibold text-xs flex items-center gap-1 shadow transition">
+          <span>+ Thêm thành viên</span>
+        </button>
+
+        <button onclick="openBatchModal()" class="px-2.5 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#a32424] text-[#fff8e7] border border-[#c59b27]/50 font-medium text-xs transition">
+          Nhập hàng loạt
+        </button>
+
+        <button id="btnUndo" onclick="undoLastAction()" disabled class="px-2.5 py-1.5 rounded-lg bg-[#490b0b] disabled:opacity-40 hover:bg-[#761616] text-[#f4e7be] border border-[#c59b27]/40 text-xs font-medium transition">
+          Hoàn tác (<span id="undoCount">0</span>)
+        </button>
+
+        <button onclick="openCloudModal()" class="px-2.5 py-1.5 rounded-lg bg-[#490b0b] hover:bg-[#761616] text-[#f4e7be] border border-[#c59b27]/50 text-xs font-medium transition">
+          Cấu hình DB
+        </button>
+
+        <div class="relative group">
+          <button class="px-2.5 py-1.5 rounded-lg bg-[#490b0b] hover:bg-[#761616] text-[#f4e7be] border border-[#c59b27]/40 text-xs font-medium transition">
+            Dữ liệu ▾
+          </button>
+          <div class="hidden group-hover:block absolute right-0 mt-1 w-48 bg-[#fdfbf7] text-[#231914] rounded-xl shadow-xl border border-[#d8c7a8] py-1 z-50 text-xs">
+            <button onclick="syncNowToCloud()" class="w-full text-left px-3.5 py-2 hover:bg-[#f5efe2] font-medium text-[#8b1e1e]">
+              ↑ Đồng bộ lên Supabase ngay
+            </button>
+            <button onclick="exportCSV()" class="w-full text-left px-3.5 py-2 hover:bg-[#f5efe2] font-medium">
+              ↓ Xuất Excel / CSV (UTF-8)
+            </button>
+            <button onclick="exportJSON()" class="w-full text-left px-3.5 py-2 hover:bg-[#f5efe2] font-medium">
+              ↓ Sao lưu file JSON
+            </button>
+            <label class="w-full text-left px-3.5 py-2 hover:bg-[#f5efe2] font-medium cursor-pointer block">
+              ↑ Nhập file JSON
+              <input type="file" accept=".json" onchange="importJSON(event)" class="hidden" />
+            </label>
+            <hr class="my-1 border-[#e5d8c1]" />
+            <button onclick="resetToOriginalData()" class="w-full text-left px-3.5 py-2 hover:bg-red-50 text-red-700 font-semibold">
+              ↺ Khôi phục dữ liệu gốc
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-TOOLBAR: SEARCH, FILTER, ZOOM -->
+    <div id="treeToolbar" class="bg-[#f5efe2] text-[#231914] px-4 py-2 border-t border-[#d8c7a8] flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2 flex-wrap flex-1">
+        <div class="relative min-w-[210px] sm:min-w-[260px]">
+          <input
+            id="searchInput"
+            type="text"
+            oninput="handleSearch(this.value)"
+            placeholder="Tìm tên, tên húy, đời (VD: Hà Quý Ngọc, Đời 6)..."
+            class="w-full pl-8 pr-7 py-1.5 rounded-lg bg-white border border-[#cbb796] focus:outline-none focus:border-[#8b1e1e] text-xs"
+          />
+          <span class="absolute left-2.5 top-1.5 text-[#8b1e1e]">🔍</span>
+          <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2 top-1.5 text-stone-400 hover:text-stone-700">✕</button>
+        </div>
+
+        <select id="genFilter" onchange="applyGenFilter(this.value)" class="px-2.5 py-1.5 rounded-lg bg-white border border-[#cbb796] focus:outline-none focus:border-[#8b1e1e] text-xs">
+          <option value="ALL">Tất cả các đời (Đời 1 – 8)</option>
+          <option value="1">Đời 1 (Thủy Tổ)</option>
+          <option value="2">Đời 2 (Tiền Tổ)</option>
+          <option value="3">Đời 3</option>
+          <option value="4">Đời 4</option>
+          <option value="5">Đời 5</option>
+          <option value="6">Đời 6</option>
+          <option value="7">Đời 7</option>
+          <option value="8">Đời 8</option>
+        </select>
+
+        <button onclick="expandAllNodes()" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#efe6d5] border border-[#cbb796] font-medium transition">
+          Mở rộng tất cả
+        </button>
+        <button onclick="collapseToGen(4)" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#efe6d5] border border-[#cbb796] font-medium transition">
+          Thu gọn tới Đời 4
+        </button>
+
+        <span id="statsBadge" class="ml-1 px-2.5 py-1 rounded-full bg-[#8b1e1e]/10 text-[#631212] font-semibold">
+          0 thành viên
+        </span>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <button onclick="zoomBy(-0.12)" class="w-7 h-7 rounded-lg bg-white hover:bg-[#efe6d5] border border-[#cbb796] font-bold">−</button>
+        <span id="zoomLabel" class="w-12 text-center font-semibold text-[#631212]">100%</span>
+        <button onclick="zoomBy(0.12)" class="w-7 h-7 rounded-lg bg-white hover:bg-[#efe6d5] border border-[#cbb796] font-bold">+</button>
+        <button onclick="fitTreeToScreen()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-[#efe6d5] border border-[#cbb796] font-medium">
+          Căn vừa màn hình
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 relative overflow-hidden flex">
+    <!-- TREE CANVAS VIEW -->
+    <div id="treeViewport" class="flex-1 canvas-bg relative overflow-hidden cursor-grab active:cursor-grabbing">
+      <div id="treeWorld" class="origin-top-left absolute top-0 left-0">
+        <svg id="treeSvg" class="absolute top-0 left-0 pointer-events-none" style="z-index: 1;"></svg>
+        <div id="treeNodesLayer" class="relative" style="z-index: 2;"></div>
+      </div>
+
+      <!-- LEGEND -->
+      <div class="hidden md:flex items-center gap-4 bg-[#fdfbf7]/95 backdrop-blur px-3.5 py-2 rounded-xl border border-[#d8c7a8] shadow-sm text-[11px] absolute bottom-4 left-4 z-20">
+        <span class="font-semibold text-[#631212]">Chú giải:</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-[#8b1e1e] inline-block"></span> Thủy Tổ / Tiền Tổ</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-white border-2 border-[#c59b27] inline-block"></span> Nam / Chính chi</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-50 border border-rose-300 inline-block"></span> Nữ</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-stone-100 border border-dashed border-stone-400 inline-block"></span> Vô tự (0 con) / Khuyết tên</span>
+        <span class="text-[#6e5d52]">• Kéo nền để di chuyển • Cuộn chuột để thu phóng</span>
+      </div>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <div id="tableViewport" class="hidden flex-1 overflow-auto bg-[#fdfbf7] p-4 sm:p-6">
+      <div class="max-w-7xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="font-serif-trad text-xl font-bold text-[#631212]">Danh Sách Thành Viên Theo Đời</h2>
+            <p class="text-xs text-[#6e5d52]">Tra cứu nhanh, lọc theo đời và mở hồ sơ chi tiết hoặc chỉnh sửa từng thành viên.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              type="text"
+              oninput="handleSearch(this.value)"
+              placeholder="Lọc nhanh trong bảng..."
+              class="px-3 py-1.5 rounded-lg border border-[#cbb796] bg-white text-xs w-56"
+            />
+            <button onclick="exportCSV()" class="px-3 py-1.5 rounded-lg bg-[#8b1e1e] text-white text-xs font-semibold hover:bg-[#631212]">
+              Tải file Excel (.csv)
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-[#dfd2ba] shadow-sm overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-[#631212] text-[#fff8e7]">
+                <th class="py-3 px-3 font-semibold">Đời</th>
+                <th class="py-3 px-3 font-semibold">Họ và tên</th>
+                <th class="py-3 px-3 font-semibold">Tên húy / Tự</th>
+                <th class="py-3 px-3 font-semibold">Thuộc nhánh / Cha</th>
+                <th class="py-3 px-3 font-semibold">Năm sinh – mất</th>
+                <th class="py-3 px-3 font-semibold">Trạng thái</th>
+                <th class="py-3 px-3 font-semibold text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-[#efe6d5]"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT DETAIL SIDEBAR DRAWER -->
+    <aside id="detailDrawer" class="w-full sm:w-[400px] bg-[#fdfbf7] border-l-2 border-[#c59b27] shadow-2xl z-30 hidden flex-col shrink-0">
+      <div class="bg-[#631212] text-[#fff8e7] px-4 py-3 flex items-center justify-between border-b border-[#c59b27]">
+        <span class="font-serif-trad font-bold text-sm tracking-wide">HỒ SƠ PHẢ HỆ CHI TIẾT</span>
+        <button onclick="closeDetailDrawer()" class="text-[#f4e7be] hover:text-white text-lg leading-none">✕</button>
+      </div>
+      <div id="detailContent" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs"></div>
+    </aside>
+  </main>
+
+  <!-- MODAL: ADD / EDIT MEMBER -->
+  <div id="memberModal" class="fixed inset-0 bg-black/55 backdrop-blur-[1px] z-50 hidden items-center justify-center p-3">
+    <div class="bg-[#fdfbf7] border-2 border-[#c59b27] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div class="bg-[#631212] text-[#fff8e7] px-5 py-3.5 flex items-center justify-between">
+        <h3 id="memberModalTitle" class="font-serif-trad font-bold text-base">Thêm Thành Viên Mới</h3>
+        <button onclick="closeMemberModal()" class="text-[#f4e7be] hover:text-white text-xl leading-none">✕</button>
+      </div>
+
+      <form id="memberForm" onsubmit="submitMemberForm(event)" class="p-5 overflow-y-auto space-y-3.5 text-xs">
+        <input type="hidden" id="editMemberId" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Họ và tên *</label>
+            <input id="mName" type="text" required placeholder="VD: Hà Văn Minh" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Tên húy / Tên tự / Hiệu</label>
+            <input id="mCourtesy" type="text" placeholder="VD: Quý Công, Đức Thủy Tổ..." class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Cha / Nhánh trên (tự tính Đời)</label>
+            <select id="mParentId" onchange="autoCalcGeneration()" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]"></select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Đời thứ *</label>
+            <input id="mGeneration" type="number" min="1" max="30" required class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Thứ tự con / Ghi chú</label>
+            <input id="mBirthOrder" type="text" placeholder="VD: Trưởng nam, Thứ hai..." class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Giới tính</label>
+            <select id="mGender" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]">
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Tình trạng phả hệ</label>
+            <select id="mStatus" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]">
+              <option value="alive">Còn sống / Đang cập nhật</option>
+              <option value="deceased">Đã tạ thế</option>
+              <option value="no_issue">Vô tự (0 con)</option>
+              <option value="missing">Khuyết tên / Chưa rõ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Năm sinh (Dương/Âm)</label>
+            <input id="mBirthYear" type="text" placeholder="VD: 1945 hoặc ~1890" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Năm mất</label>
+            <input id="mDeathYear" type="text" placeholder="VD: 2018" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Ngày giỗ Âm lịch</label>
+            <input id="mLunarDeath" type="text" placeholder="VD: 12/07 ÂL" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Vợ / Chồng</label>
+            <input id="mSpouse" type="text" placeholder="Tên vợ hoặc chồng" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Mộ phần / Nơi an táng</label>
+            <input id="mBurial" type="text" placeholder="VD: Nghĩa trang thôn Cao Bất Nang" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Ảnh chân dung (Tải ảnh hoặc dán URL)</label>
+          <div class="flex items-center gap-2">
+            <input id="mAvatar" type="text" placeholder="https://... hoặc tải tệp ảnh bên cạnh" class="flex-1 px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+            <label class="px-3 py-2 rounded-lg bg-[#efe6d5] hover:bg-[#e3d4b8] border border-[#cbb796] font-semibold cursor-pointer shrink-0">
+              Chọn ảnh
+              <input type="file" accept="image/*" onchange="handleAvatarUpload(event)" class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Tiểu sử / Công trạng / Ghi chú</label>
+          <textarea id="mBio" rows="3" placeholder="Ghi chú về nghề nghiệp, đóng góp, chi nhánh hoặc thông tin bổ sung..." class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]"></textarea>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-[#e5d8c1]">
+          <button type="button" onclick="closeMemberModal()" class="px-4 py-2 rounded-lg border border-[#cbb796] bg-white hover:bg-[#f5efe2] font-semibold">
+            Hủy bỏ
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold shadow">
+            Lưu thông tin
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: QUICK BATCH ADD CHILDREN -->
+  <div id="batchModal" class="fixed inset-0 bg-black/55 backdrop-blur-[1px] z-50 hidden items-center justify-center p-3">
+    <div class="bg-[#fdfbf7] border-2 border-[#c59b27] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="bg-[#631212] text-[#fff8e7] px-5 py-3.5 flex items-center justify-between">
+        <h3 class="font-serif-trad font-bold text-base">Thêm Nhanh Nhiều Người Con</h3>
+        <button onclick="closeBatchModal()" class="text-[#f4e7be] hover:text-white text-xl leading-none">✕</button>
+      </div>
+      <form onsubmit="submitBatchForm(event)" class="p-5 space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Chọn người Cha</label>
+          <select id="batchParentId" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white"></select>
+        </div>
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Danh sách tên con (mỗi người một dòng hoặc cách nhau bởi dấu phẩy)</label>
+          <textarea id="batchNames" rows="5" required placeholder="VD:&#10;Hà Văn A&#10;Hà Văn B&#10;Hà Thị C" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-[#e5d8c1]">
+          <button type="button" onclick="closeBatchModal()" class="px-4 py-2 rounded-lg border border-[#cbb796] bg-white font-semibold">Hủy</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold">Tạo hàng loạt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SUPABASE CLOUD CONFIG -->
+  <div id="cloudModal" class="fixed inset-0 bg-black/55 backdrop-blur-[1px] z-50 hidden items-center justify-center p-3">
+    <div class="bg-[#fdfbf7] border-2 border-[#c59b27] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="bg-[#631212] text-[#fff8e7] px-5 py-3.5 flex items-center justify-between">
+        <h3 class="font-serif-trad font-bold text-base">Kết Nối Cơ Sở Dữ Liệu Supabase</h3>
+        <button onclick="closeCloudModal()" class="text-[#f4e7be] hover:text-white text-xl leading-none">✕</button>
+      </div>
+      <form onsubmit="saveCloudConfig(event)" class="p-5 space-y-3.5 text-xs">
+        <p class="text-[#6e5d52] leading-relaxed">
+          Nhập <strong>Project URL</strong> và <strong>Publishable / anon key</strong> từ mục <em>Project Settings &gt; API</em> trên Supabase để mọi người cùng xem và cập nhật đồng bộ.
+        </p>
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Supabase Project URL</label>
+          <input id="sbUrlInput" type="url" required placeholder="https://xxxxxxxxxxxx.supabase.co" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white" />
+        </div>
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Supabase anon / publishable key</label>
+          <input id="sbKeyInput" type="text" required placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white" />
+        </div>
+        <div class="flex items-center justify-between pt-2 border-t border-[#e5d8c1]">
+          <button type="button" onclick="clearCloudConfig()" class="px-3 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 font-semibold">
+            Ngắt kết nối DB
+          </button>
+          <div class="flex gap-2">
+            <button type="button" onclick="closeCloudModal()" class="px-4 py-2 rounded-lg border border-[#cbb796] bg-white font-semibold">Đóng</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold">Lưu & Đồng bộ</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. DỮ LIỆU GỐC 8 ĐỜI: SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO BẤT NANG
+    // =========================================================================
+    const INITIAL_MEMBERS = [
+      // ĐỜI 1: THỦY TỔ
+      { id: 'g1_thuy_to', parentId: null, name: 'Hà Quý Công', courtesyName: 'Thủy Tổ Họ Hà', gender: 'male', generation: 1, birthOrder: 'Đời 1 - Thủy Tổ', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: 'Thôn Cao Bất Nang', bio: 'Đức Thủy Tổ họ Hà tại thôn Cao Bất Nang.', avatar: '' },
+
+      // ĐỜI 2: TIỀN TỔ
+      { id: 'g2_ha_quy_ngoc', parentId: 'g1_thuy_to', name: 'Hà Quý Ngọc', courtesyName: 'Tiền Tổ', gender: 'male', generation: 2, birthOrder: 'Đời 2 - Tiền Tổ', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: 'Thôn Cao Bất Nang', bio: 'Tiền Tổ họ Hà, sinh ra các nhánh phát triển về sau.', avatar: '' },
+
+      // ĐỜI 3
+      { id: 'g3_ha_lanh', parentId: 'g2_ha_quy_ngoc', name: 'Hà Lạnh', courtesyName: '', gender: 'male', generation: 3, birthOrder: 'Nhánh trái', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Con Tiền Tổ Hà Quý Ngọc, thuộc nhánh bên trái.', avatar: '' },
+      { id: 'g3_ha_van_ra', parentId: 'g2_ha_quy_ngoc', name: 'Hà Văn Rạ', courtesyName: '', gender: 'male', generation: 3, birthOrder: 'Nhánh giữa', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Con Tiền Tổ Hà Quý Ngọc, thuộc nhánh giữa.', avatar: '' },
+      { id: 'g3_nhanh_phai', parentId: 'g2_ha_quy_ngoc', name: '(Khuyết tên)', courtesyName: 'Nhánh phải', gender: 'male', generation: 3, birthOrder: 'Nhánh phải', status: 'missing', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Ô nhánh bên phải trên sơ đồ gốc chưa ghi tên.', avatar: '' },
+
+      // ĐỜI 4
+      { id: 'g4_ha_mien', parentId: 'g3_ha_lanh', name: 'Hà Miền', courtesyName: '', gender: 'male', generation: 4, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g4_ha_cau', parentId: 'g3_ha_lanh', name: 'Hà Cậu', courtesyName: '', gender: 'male', generation: 4, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g4_ha_rang', parentId: 'g3_ha_van_ra', name: 'Hà Rạng', courtesyName: '', gender: 'male', generation: 4, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g4_ha_ku', parentId: 'g3_ha_van_ra', name: 'Hà Ku', courtesyName: '', gender: 'male', generation: 4, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g4_phai_1', parentId: 'g3_nhanh_phai', name: '(Khuyết tên)', courtesyName: '', gender: 'male', generation: 4, birthOrder: '', status: 'missing', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+
+      // ĐỜI 5
+      { id: 'g5_ha_mien_con', parentId: 'g4_ha_mien', name: 'Hà', courtesyName: '', gender: 'male', generation: 5, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Trên sơ đồ gốc ghi họ Hà, là cha của Hà Đều và Hà Đặng.', avatar: '' },
+      { id: 'g5_ha_cau_con', parentId: 'g4_ha_cau', name: 'Hà', courtesyName: '', gender: 'male', generation: 5, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Trên sơ đồ gốc ghi họ Hà, là cha của Hà Bính và Hà Tính.', avatar: '' },
+      { id: 'g5_ha_can', parentId: 'g4_ha_cau', name: 'Hà Căn', courtesyName: '', gender: 'male', generation: 5, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g5_ha_bang', parentId: 'g4_ha_rang', name: 'Hà Bang', courtesyName: '', gender: 'male', generation: 5, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g5_ha_mec', parentId: 'g4_ha_rang', name: 'Hà Méc', courtesyName: '', gender: 'male', generation: 5, birthOrder: '0 con', status: 'no_issue', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Ghi chú trên sơ đồ: 0 con.', avatar: '' },
+      { id: 'g5_ha_quynh', parentId: 'g4_ha_ku', name: 'Hà Quýnh', courtesyName: '', gender: 'male', generation: 5, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g5_ha_mien_ku', parentId: 'g4_ha_ku', name: 'Hà Miền', courtesyName: '', gender: 'male', generation: 5, birthOrder: '0 con', status: 'no_issue', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Ghi chú trên sơ đồ: 0 con.', avatar: '' },
+      { id: 'g5_ha_uen', parentId: 'g4_phai_1', name: 'Hà Uền', courtesyName: '', gender: 'male', generation: 5, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+
+      // ĐỜI 6
+      { id: 'g6_ha_deu', parentId: 'g5_ha_mien_con', name: 'Hà Đều', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_dang_1', parentId: 'g5_ha_mien_con', name: 'Hà Đặng', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_binh', parentId: 'g5_ha_cau_con', name: 'Hà Bính', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_tinh', parentId: 'g5_ha_cau_con', name: 'Hà Tính', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_mau', parentId: 'g5_ha_can', name: 'Hà Mậu', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_ret', parentId: 'g5_ha_can', name: 'Hà Rết', courtesyName: '', gender: 'male', generation: 6, birthOrder: '0 con', status: 'no_issue', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Ghi chú trên sơ đồ: 0 con.', avatar: '' },
+      { id: 'g6_ha_thet', parentId: 'g5_ha_bang', name: 'Hà Thết', courtesyName: '', gender: 'male', generation: 6, birthOrder: '0 con', status: 'no_issue', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Ghi chú trên sơ đồ: 0 con.', avatar: '' },
+      { id: 'g6_ha_len', parentId: 'g5_ha_bang', name: 'Hà Lên', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_giang', parentId: 'g5_ha_quynh', name: 'Hà Giang', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_xuan_mao', parentId: 'g5_ha_quynh', name: 'Hà Xuân Mão', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_ha_tien_si', parentId: 'g5_ha_quynh', name: 'Hà Tiến Sĩ', courtesyName: '', gender: 'male', generation: 6, birthOrder: '1945', status: 'deceased', birthYear: '1945', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Ghi chú trên sơ đồ: 1945.', avatar: '' },
+      { id: 'g6_ha_dang_2', parentId: 'g5_ha_uen', name: 'Hà Đặng', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g6_khuyet_phai', parentId: 'g5_ha_uen', name: '(Khuyết tên)', courtesyName: '', gender: 'male', generation: 6, birthOrder: '', status: 'missing', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+
+      // ĐỜI 7
+      { id: 'g7_ha_dac', parentId: 'g6_ha_deu', name: 'Hà Đạc', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_hoi', parentId: 'g6_ha_deu', name: 'Hà Văn Hội', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_yen', parentId: 'g6_ha_dang_1', name: 'Hà Yên', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_banh', parentId: 'g6_ha_binh', name: 'Hà Văn Bành', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_tinh', parentId: 'g6_ha_binh', name: 'Hà Tĩnh', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_minh_tuan', parentId: 'g6_ha_tinh', name: 'Hà Minh Tuân', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_nam', parentId: 'g6_ha_mau', name: 'Hà Văn Nam', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_duy_dang', parentId: 'g6_ha_mau', name: 'Hà Duy Đang', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_sinh', parentId: 'g6_ha_mau', name: 'Hà Văn Sinh', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_pho', parentId: 'g6_ha_len', name: 'Hà Văn Phó', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_phuc', parentId: 'g6_ha_len', name: 'Hà Văn Phúc', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_san', parentId: 'g6_ha_len', name: 'Hà San', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_khanh', parentId: 'g6_ha_giang', name: 'Hà Khánh', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_dai_hoang', parentId: 'g6_ha_giang', name: 'Hà Đại Hoạng', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_vo', parentId: 'g6_ha_xuan_mao', name: 'Hà Văn Vò', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_hung', parentId: 'g6_ha_tien_si', name: 'Hà Văn Hùng', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_dung', parentId: 'g6_ha_tien_si', name: 'Hà Văn Dũng', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_van_hiep', parentId: 'g6_ha_tien_si', name: 'Hà Văn Hiệp', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_quang_hung', parentId: 'g6_ha_dang_2', name: 'Hà Quang Hưng', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_te_duong', parentId: 'g6_khuyet_phai', name: 'Hà Tề Dương', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g7_ha_giang_nam', parentId: 'g6_khuyet_phai', name: 'Hà Giang Nam', courtesyName: '', gender: 'male', generation: 7, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+
+      // ĐỜI 8
+      { id: 'g8_ha_van_dac', parentId: 'g7_ha_dac', name: 'Hà Văn Đạc', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_van_minh', parentId: 'g7_ha_van_banh', name: 'Hà Văn Minh', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_ngoc_tu', parentId: 'g7_ha_tinh', name: 'Hà Ngọc Tú', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_minh_dac', parentId: 'g7_ha_minh_tuan', name: 'Hà Minh Đạc', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_tuan_anh', parentId: 'g7_ha_van_pho', name: 'Hà Tuần Anh', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_van_thinh', parentId: 'g7_ha_van_phuc', name: 'Hà Văn Thịnh', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_kien', parentId: 'g7_ha_san', name: 'Hà Kiên', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_van_duong', parentId: 'g7_ha_van_vo', name: 'Hà Văn Dương', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_tien_huy', parentId: 'g7_ha_van_hung', name: 'Hà Tiến Huy', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' },
+      { id: 'g8_ha_quang_long', parentId: 'g7_ha_quang_hung', name: 'Hà Quang Long', courtesyName: '', gender: 'male', generation: 8, birthOrder: '', status: 'alive', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: '', avatar: '' }
+    ];
+
+    // =========================================================================
+    // 2. TRẠNG THÁI ỨNG DỤNG & SUPABASE CLIENT
+    // =========================================================================
+    const LOCAL_STORAGE_KEY = 'gia_pha_ho_ha_cao_bat_nang_v1';
+    const CLOUD_CONFIG_KEY = 'gia_pha_ho_ha_supabase_cfg_v1';
+
+    let members = [];
+    let undoStack = [];
+    let collapsedIds = new Set();
+    let selectedMemberId = null;
+    let searchQuery = '';
+    let genFilter = 'ALL';
+    let currentView = 'tree';
+
+    let supabaseClient = null;
+    let realtimeChannel = null;
+
+    // Pan & Zoom state
+    let scale = 0.88;
+    let panX = 40;
+    let panY = 30;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+
+    function getCloudConfig() {
+      try {
+        return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || 'null');
+      } catch {
+        return null;
+      }
+    }
+
+    function setCloudStatus(mode, text) {
+      const dot = document.getElementById('cloudDot');
+      const label = document.getElementById('cloudStatusText');
+      label.textContent = text;
+      dot.className = 'w-2 h-2 rounded-full ' + (
+        mode === 'connected' ? 'bg-emerald-400' :
+        mode === 'syncing' ? 'bg-sky-300 animate-ping' :
+        'bg-amber-400'
+      );
+    }
+
+    function rowToMember(row) {
+      return {
+        id: row.id,
+        parentId: row.parent_id || null,
+        name: row.name || '',
+        courtesyName: row.courtesy_name || '',
+        gender: row.gender || 'male',
+        generation: Number(row.generation) || 1,
+        birthOrder: row.birth_order || '',
+        status: row.status || 'alive',
+        birthYear: row.birth_year || '',
+        deathYear: row.death_year || '',
+        lunarDeathDate: row.lunar_death_date || '',
+        spouse: row.spouse || '',
+        burialPlace: row.burial_place || '',
+        bio: row.bio || '',
+        avatar: row.avatar || ''
+      };
+    }
+
+    function memberToRow(m) {
+      return {
+        id: m.id,
+        parent_id: m.parentId || null,
+        name: m.name,
+        courtesy_name: m.courtesyName || '',
+        gender: m.gender || 'male',
+        generation: Number(m.generation) || 1,
+        birth_order: m.birthOrder || '',
+        status: m.status || 'alive',
+        birth_year: m.birthYear || '',
+        death_year: m.deathYear || '',
+        lunar_death_date: m.lunarDeathDate || '',
+        spouse: m.spouse || '',
+        burial_place: m.burialPlace || '',
+        bio: m.bio || '',
+        avatar: m.avatar || '',
+        updated_at: new Date().toISOString()
+      };
+    }
+
+    function saveLocalCache() {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(members));
+      } catch (e) {
+        console.warn('Không thể lưu localStorage:', e);
+      }
+    }
+
+    function loadLocalCache() {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+      return JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+    }
+
+    async function initSupabase(cfg) {
+      if (!cfg || !cfg.url || !cfg.anonKey || !window.supabase) {
+        supabaseClient = null;
+        setCloudStatus('local', 'Chế độ cục bộ (Nhấn Cấu hình DB)');
+        return false;
+      }
+
+      try {
+        supabaseClient = window.supabase.createClient(cfg.url.trim(), cfg.anonKey.trim());
+        setCloudStatus('syncing', 'Đang kết nối Supabase...');
+
+        const { data, error } = await supabaseClient
+          .from('family_members')
+          .select('*');
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          // Lần đầu kết nối bảng trống: đẩy dữ liệu gốc lên Supabase
+          const rows = members.map(memberToRow);
+          const { error: seedErr } = await supabaseClient.from('family_members').upsert(rows);
+          if (seedErr) throw seedErr;
+        } else {
+          members = data.map(rowToMember);
+          saveLocalCache();
+        }
+
+        setupRealtimeSubscription();
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+        renderAll();
+        return true;
+      } catch (err) {
+        console.error('Lỗi Supabase:', err);
+        setCloudStatus('local', 'Lỗi kết nối DB (Đang dùng dữ liệu cục bộ)');
+        return false;
+      }
+    }
+
+    function setupRealtimeSubscription() {
+      if (!supabaseClient) return;
+      if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+      }
+
+      realtimeChannel = supabaseClient
+        .channel('family_members_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'family_members' }, async () => {
+          const { data, error } = await supabaseClient.from('family_members').select('*');
+          if (!error && Array.isArray(data) && data.length > 0) {
+            members = data.map(rowToMember);
+            saveLocalCache();
+            renderAll();
+            if (selectedMemberId) {
+              const found = members.find(x => x.id === selectedMemberId);
+              if (found) renderDetailDrawer(found);
+            }
+          }
+        })
+        .subscribe();
+    }
+
+    async function persistMemberUpsert(member) {
+      saveLocalCache();
+      if (!supabaseClient) return;
+      setCloudStatus('syncing', 'Đang lưu lên Supabase...');
+      const { error } = await supabaseClient.from('family_members').upsert(memberToRow(member));
+      if (error) {
+        console.error(error);
+        setCloudStatus('local', 'Lỗi ghi Supabase (Đã lưu cục bộ)');
+      } else {
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+      }
+    }
+
+    async function persistMemberDelete(id) {
+      saveLocalCache();
+      if (!supabaseClient) return;
+      setCloudStatus('syncing', 'Đang xóa trên Supabase...');
+      const { error } = await supabaseClient.from('family_members').delete().eq('id', id);
+      if (error) {
+        console.error(error);
+        setCloudStatus('local', 'Lỗi xóa Supabase');
+      } else {
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+      }
+    }
+
+    async function syncNowToCloud() {
+      saveLocalCache();
+      if (!supabaseClient) {
+        openCloudModal();
+        return;
+      }
+      setCloudStatus('syncing', 'Đang đồng bộ toàn bộ...');
+      const { error } = await supabaseClient.from('family_members').upsert(members.map(memberToRow));
+      if (error) {
+        alert('Đồng bộ thất bại: ' + error.message);
+        setCloudStatus('local', 'Lỗi đồng bộ Supabase');
+      } else {
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+        alert('Đã đồng bộ toàn bộ ' + members.length + ' thành viên lên Supabase!');
+      }
+    }
+
+    // =========================================================================
+    // 3. QUẢN LÝ LỊCH SỬ & UNDO
+    // =========================================================================
+    function pushUndoSnapshot() {
+      undoStack.push(JSON.parse(JSON.stringify(members)));
+      if (undoStack.length > 25) undoStack.shift();
+      updateUndoButton();
+    }
+
+    function updateUndoButton() {
+      const btn = document.getElementById('btnUndo');
+      const cnt = document.getElementById('undoCount');
+      cnt.textContent = undoStack.length;
+      btn.disabled = undoStack.length === 0;
+    }
+
+    async function undoLastAction() {
+      if (undoStack.length === 0) return;
+      const prev = undoStack.pop();
+      const prevIds = new Set(prev.map(m => m.id));
+      const removedIds = members.filter(m => !prevIds.has(m.id)).map(m => m.id);
+
+      members = prev;
+      saveLocalCache();
+      updateUndoButton();
+      renderAll();
+
+      if (supabaseClient) {
+        setCloudStatus('syncing', 'Đang hoàn tác trên Supabase...');
+        if (removedIds.length > 0) {
+          await supabaseClient.from('family_members').delete().in('id', removedIds);
+        }
+        await supabaseClient.from('family_members').upsert(members.map(memberToRow));
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+      }
+    }
+
+    // =========================================================================
+    // 4. THUẬT TOÁN TÍNH TOÁN CÂY & VẼ SVG
+    // =========================================================================
+    function getChildren(parentId) {
+      return members.filter(m => (m.parentId || null) === (parentId || null));
+    }
+
+    function getDescendants(id) {
+      const result = [];
+      const queue = [...getChildren(id)];
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        result.push(curr);
+        queue.push(...getChildren(curr.id));
+      }
+      return result;
+    }
+
+    function getVisibleNodes() {
+      if (genFilter !== 'ALL') {
+        const targetGen = Number(genFilter);
+        return members.filter(m => m.generation === targetGen);
+      }
+
+      const visible = [];
+      const roots = getChildren(null);
+
+      function traverse(node) {
+        visible.push(node);
+        if (!collapsedIds.has(node.id)) {
+          for (const child of getChildren(node.id)) {
+            traverse(child);
+          }
+        }
+      }
+
+      for (const r of roots) traverse(r);
+      return visible;
+    }
+
+    function computeLayout() {
+      const NODE_W = 196;
+      const NODE_H = 88;
+      const GAP_X = 22;
+      const GAP_Y = 74;
+
+      const positions = new Map();
+      const childrenMap = new Map();
+      for (const m of members) childrenMap.set(m.id, []);
+      for (const m of members) {
+        if (m.parentId && childrenMap.has(m.parentId)) {
+          childrenMap.get(m.parentId).push(m);
+        }
+      }
+
+      function getSubtreeWidth(node) {
+        const kids = (childrenMap.get(node.id) || []).filter(c => !collapsedIds.has(node.id) && genFilter === 'ALL');
+        if (kids.length === 0) return NODE_W;
+        const kidsWidth = kids.reduce((sum, k) => sum + getSubtreeWidth(k), 0) + (kids.length - 1) * GAP_X;
+        return Math.max(NODE_W, kidsWidth);
+      }
+
+      let cursorX = 30;
+      const roots = members.filter(m => !m.parentId);
+
+      function layoutNode(node, xLeft, depth) {
+        const kids = (genFilter === 'ALL' && !collapsedIds.has(node.id))
+          ? (childrenMap.get(node.id) || [])
+          : [];
+
+        const totalW = getSubtreeWidth(node);
+        const y = 36 + depth * (NODE_H + GAP_Y);
+
+        if (kids.length === 0) {
+          positions.set(node.id, { x: xLeft + (totalW - NODE_W) / 2, y, w: NODE_W, h: NODE_H });
+          return;
+        }
+
+        const kidsSumW = kids.reduce((s, k) => s + getSubtreeWidth(k), 0) + (kids.length - 1) * GAP_X;
+        let childCursor = xLeft + (totalW - kidsSumW) / 2;
+
+        for (const k of kids) {
+          const kw = getSubtreeWidth(k);
+          layoutNode(k, childCursor, depth + 1);
+          childCursor += kw + GAP_X;
+        }
+
+        const firstPos = positions.get(kids[0].id);
+        const lastPos = positions.get(kids[kids.length - 1].id);
+        const centerX = (firstPos.x + firstPos.w / 2 + lastPos.x + lastPos.w / 2) / 2;
+        positions.set(node.id, { x: centerX - NODE_W / 2, y, w: NODE_W, h: NODE_H });
+      }
+
+      for (const root of roots) {
+        const w = getSubtreeWidth(root);
+        layoutNode(root, cursorX, 0);
+        cursorX += w + 48;
+      }
+
+      let maxX = 1200;
+      let maxY = 800;
+      positions.forEach(p => {
+        maxX = Math.max(maxX, p.x + p.w + 120);
+        maxY = Math.max(maxY, p.y + p.h + 120);
+      });
+
+      return { positions, maxX, maxY, childrenMap };
+    }
+
+    function renderTree() {
+      const world = document.getElementById('treeWorld');
+      const svg = document.getElementById('treeSvg');
+      const layer = document.getElementById('treeNodesLayer');
+
+      const { positions, maxX, maxY, childrenMap } = computeLayout();
+      world.style.width = maxX + 'px';
+      world.style.height = maxY + 'px';
+      svg.setAttribute('width', maxX);
+      svg.setAttribute('height', maxY);
+      svg.setAttribute('viewBox', `0 0 ${maxX} ${maxY}`);
+
+      // Draw orthogonal connectors
+      let pathsHtml = '';
+      positions.forEach((pos, id) => {
+        const isCollapsed = collapsedIds.has(id);
+        if (isCollapsed || genFilter !== 'ALL') return;
+        const kids = childrenMap.get(id) || [];
+        if (kids.length === 0) return;
+
+        const parentCenterX = pos.x + pos.w / 2;
+        const parentBottomY = pos.y + pos.h;
+        const childTopY = positions.get(kids[0].id).y;
+        const midY = parentBottomY + (childTopY - parentBottomY) / 2;
+
+        pathsHtml += `<path d="M ${parentCenterX} ${parentBottomY} L ${parentCenterX} ${midY}" stroke="#8b1e1e" stroke-width="1.8" fill="none" />`;
+
+        if (kids.length > 1) {
+          const firstX = positions.get(kids[0].id).x + pos.w / 2;
+          const lastX = positions.get(kids[kids.length - 1].id).x + pos.w / 2;
+          pathsHtml += `<path d="M ${firstX} ${midY} L ${lastX} ${midY}" stroke="#8b1e1e" stroke-width="1.8" fill="none" />`;
+        }
+
+        for (const k of kids) {
+          const kp = positions.get(k.id);
+          const kx = kp.x + kp.w / 2;
+          pathsHtml += `<path d="M ${kx} ${midY} L ${kx} ${kp.y}" stroke="#8b1e1e" stroke-width="1.8" fill="none" />`;
+        }
+      });
+      svg.innerHTML = pathsHtml;
+
+      // Draw cards
+      const q = searchQuery.trim().toLowerCase();
+      let cardsHtml = '';
+
+      positions.forEach((pos, id) => {
+        const m = members.find(x => x.id === id);
+        if (!m) return;
+
+        const allKids = childrenMap.get(m.id) || [];
+        const hasKids = allKids.length > 0;
+        const isCollapsed = collapsedIds.has(m.id);
+        const isSelected = selectedMemberId === m.id;
+
+        const isMatch = q && (
+          m.name.toLowerCase().includes(q) ||
+          (m.courtesyName || '').toLowerCase().includes(q) ||
+          `đời ${m.generation}`.includes(q) ||
+          (m.spouse || '').toLowerCase().includes(q)
+        );
+
+        let cardTheme = 'bg-white border-[#c59b27] text-[#231914]';
+        if (m.generation === 1 || m.generation === 2) {
+          cardTheme = 'bg-gradient-to-br from-[#8b1e1e] to-[#631212] border-[#f4e7be] text-[#fff8e7]';
+        } else if (m.status === 'missing' || m.status === 'no_issue') {
+          cardTheme = 'bg-stone-100 border-dashed border-stone-400 text-stone-700';
+        } else if (m.gender === 'female') {
+          cardTheme = 'bg-rose-50/90 border-rose-300 text-[#231914]';
+        }
+
+        const isAncestor = m.generation === 1 || m.generation === 2;
+        const subBadgeClass = isAncestor ? 'bg-[#f4e7be]/20 text-[#f4e7be]' : 'bg-[#f5efe2] text-[#6e5d52]';
+
+        cardsHtml += `
+          <div
+            data-node-id="${m.id}"
+            onclick="selectMember('${m.id}')"
+            style="left:${pos.x}px; top:${pos.y}px; width:${pos.w}px; height:${pos.h}px;"
+            class="node-card absolute rounded-xl border-2 px-2.5 py-2 cursor-pointer flex flex-col justify-between ${cardTheme} ${isSelected ? 'ring-2 ring-[#c59b27] ring-offset-2' : ''} ${isMatch ? 'highlight-pulse ring-2 ring-amber-400' : ''}"
+          >
+            <!-- Quick action buttons on hover -->
+            <div class="quick-actions absolute -top-3 right-2 flex items-center gap-1 z-20" onclick="event.stopPropagation()">
+              <button onclick="openAddModal('${m.id}')" title="Thêm con cho ${escapeHtml(m.name)}" class="px-1.5 py-0.5 rounded bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold text-[10px] shadow">
+                + Con
+              </button>
+              <button onclick="openEditModal('${m.id}')" title="Sửa thông tin" class="px-1.5 py-0.5 rounded bg-[#631212] hover:bg-[#8b1e1e] text-white font-semibold text-[10px] shadow">
+                Sửa
+              </button>
+            </div>
+
+            <div class="flex items-start gap-2 min-w-0">
+              ${m.avatar
+                ? `<img src="${m.avatar}" alt="${escapeHtml(m.name)}" class="w-9 h-9 rounded-lg object-cover border border-[#c59b27]/60 shrink-0" />`
+                : `<div class="w-9 h-9 rounded-lg ${isAncestor ? 'bg-[#490b0b] text-[#f4e7be] border border-[#c59b27]/60' : 'bg-[#8b1e1e]/10 text-[#8b1e1e]'} flex items-center justify-center font-serif-trad font-bold text-sm shrink-0">${escapeHtml((m.name || '?')[0])}</div>`
+              }
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${subBadgeClass}">Đời ${m.generation}</span>
+                  ${m.birthOrder ? `<span class="text-[10px] truncate opacity-80">${escapeHtml(m.birthOrder)}</span>` : ''}
+                </div>
+                <div class="font-bold text-xs sm:text-[13px] truncate mt-0.5">${escapeHtml(m.name)}</div>
+                ${m.courtesyName ? `<div class="text-[10px] truncate opacity-85">${escapeHtml(m.courtesyName)}</div>` : ''}
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] opacity-80 pt-1 border-t border-current/10">
+              <span class="truncate">${m.spouse ? 'Phối ngẫu: ' + escapeHtml(m.spouse) : (m.birthYear || m.deathYear ? `${m.birthYear || '?'} – ${m.deathYear || ''}` : 'Họ Hà - Cao Bất Nang')}</span>
+              ${hasKids && genFilter === 'ALL'
+                ? `<button onclick="event.stopPropagation(); toggleCollapse('${m.id}')" class="ml-1 px-1.5 rounded bg-black/10 hover:bg-black/20 font-bold">${isCollapsed ? '+' + allKids.length : '−'}</button>`
+                : ''
+              }
+            </div>
+          </div>
+        `;
+      });
+
+      layer.innerHTML = cardsHtml;
+      applyTransform();
+    }
+
+    function applyTransform() {
+      const world = document.getElementById('treeWorld');
+      world.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
+    }
+
+    function zoomBy(delta) {
+      scale = Math.min(2.0, Math.max(0.3, Number((scale + delta).toFixed(2))));
+      applyTransform();
+    }
+
+    function fitTreeToScreen() {
+      const viewport = document.getElementById('treeViewport');
+      const { maxX, maxY } = computeLayout();
+      const vw = viewport.clientWidth - 40;
+      const vh = viewport.clientHeight - 40;
+      const nextScale = Math.min(1, Math.max(0.35, Math.min(vw / maxX, vh / maxY)));
+      scale = Number(nextScale.toFixed(2));
+      panX = 24;
+      panY = 20;
+      applyTransform();
+    }
+
+    function toggleCollapse(id) {
+      if (collapsedIds.has(id)) collapsedIds.delete(id);
+      else collapsedIds.add(id);
+      renderTree();
+    }
+
+    function expandAllNodes() {
+      collapsedIds.clear();
+      genFilter = 'ALL';
+      document.getElementById('genFilter').value = 'ALL';
+      renderTree();
+    }
+
+    function collapseToGen(maxGen) {
+      genFilter = 'ALL';
+      document.getElementById('genFilter').value = 'ALL';
+      collapsedIds.clear();
+      for (const m of members) {
+        if (m.generation >= maxGen && getChildren(m.id).length > 0) {
+          collapsedIds.add(m.id);
+        }
+      }
+      renderTree();
+    }
+
+    function applyGenFilter(val) {
+      genFilter = val;
+      renderTree();
+      renderTable();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val;
+      document.getElementById('clearSearchBtn').classList.toggle('hidden', !val);
+      renderTree();
+      renderTable();
+
+      if (val.trim()) {
+        const q = val.trim().toLowerCase();
+        const hit = members.find(m =>
+          m.name.toLowerCase().includes(q) ||
+          (m.courtesyName || '').toLowerCase().includes(q) ||
+          `đời ${m.generation}`.includes(q)
+        );
+        if (hit) focusNodeById(hit.id);
+      }
+    }
+
+    function clearSearch() {
+      searchQuery = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderTree();
+      renderTable();
+    }
+
+    function focusNodeById(id) {
+      if (currentView !== 'tree') return;
+      // Ensure ancestors are expanded
+      let curr = members.find(m => m.id === id);
+      while (curr && curr.parentId) {
+        collapsedIds.delete(curr.parentId);
+        curr = members.find(m => m.id === curr.parentId);
+      }
+      renderTree();
+
+      const { positions } = computeLayout();
+      const pos = positions.get(id);
+      const viewport = document.getElementById('treeViewport');
+      if (pos && viewport) {
+        panX = viewport.clientWidth / 2 - (pos.x + pos.w / 2) * scale;
+        panY = viewport.clientHeight / 2 - (pos.y + pos.h / 2) * scale;
+        applyTransform();
+      }
+    }
+
+    // =========================================================================
+    // 5. CHI TIẾT, BẢNG DANH SÁCH & MODAL THÊM / SỬA / XÓA
+    // =========================================================================
+    function selectMember(id) {
+      selectedMemberId = id;
+      const m = members.find(x => x.id === id);
+      if (!m) return;
+      renderTree();
+      renderDetailDrawer(m);
+    }
+
+    function closeDetailDrawer() {
+      selectedMemberId = null;
+      document.getElementById('detailDrawer').classList.add('hidden');
+      renderTree();
+    }
+
+    function renderDetailDrawer(m) {
+      const drawer = document.getElementById('detailDrawer');
+      const content = document.getElementById('detailContent');
+      const parent = m.parentId ? members.find(x => x.id === m.parentId) : null;
+      const kids = getChildren(m.id);
+
+      const statusLabels = {
+        alive: 'Còn sống / Đang cập nhật',
+        deceased: 'Đã tạ thế',
+        no_issue: 'Vô tự (0 con)',
+        missing: 'Khuyết tên / Chưa rõ'
+      };
+
+      content.innerHTML = `
+        <div class="flex items-center gap-3 pb-3 border-b border-[#e5d8c1]">
+          ${m.avatar
+            ? `<img src="${m.avatar}" class="w-16 h-16 rounded-xl object-cover border-2 border-[#c59b27]" />`
+            : `<div class="w-16 h-16 rounded-xl bg-[#8b1e1e] text-[#fff8e7] flex items-center justify-center font-serif-trad font-bold text-2xl border-2 border-[#c59b27]">${escapeHtml((m.name || '?')[0])}</div>`
+          }
+          <div>
+            <span class="px-2 py-0.5 rounded bg-[#8b1e1e]/10 text-[#631212] font-bold text-[11px]">Đời thứ ${m.generation}</span>
+            <h3 class="font-serif-trad font-bold text-lg text-[#231914] mt-1">${escapeHtml(m.name)}</h3>
+            ${m.courtesyName ? `<p class="text-[#6e5d52] italic">${escapeHtml(m.courtesyName)}</p>` : ''}
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5">
+          <button onclick="openAddModal('${m.id}')" class="px-3 py-1.5 rounded-lg bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold">+ Thêm con</button>
+          <button onclick="openEditModal('${m.id}')" class="px-3 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold">Sửa hồ sơ</button>
+          <button onclick="deleteMember('${m.id}')" class="px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 font-semibold">Xóa</button>
+        </div>
+
+        <div class="bg-[#f5efe2] rounded-xl p-3 space-y-2 border border-[#e5d8c1]">
+          <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Cha / Nhánh trên:</span><span class="font-semibold text-right">${parent ? `<button onclick="selectMember('${parent.id}')" class="text-[#8b1e1e] underline">${escapeHtml(parent.name)} (Đời ${parent.generation})</button>` : 'Thủy Tổ'}</span></div>
+          <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Thứ tự con:</span><span class="font-semibold text-right">${escapeHtml(m.birthOrder || '—')}</span></div>
+          <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Tình trạng:</span><span class="font-semibold text-right">${statusLabels[m.status] || m.status}</span></div>
+          <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Năm sinh – mất:</span><span class="font-semibold text-right">${escapeHtml(m.birthYear || '?')} – ${escapeHtml(m.deathYear || '?')}</span></div>
+          <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Ngày giỗ ÂL:</span><span class="font-semibold text-right">${escapeHtml(m.lunarDeathDate || '—')}</span></div>
+          <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Vợ / Chồng:</span><span class="font-semibold text-right">${escapeHtml(m.spouse || '—')}</span></div>
+          <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Nơi an táng:</span><span class="font-semibold text-right">${escapeHtml(m.burialPlace || '—')}</span></div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-[#631212] mb-1">Tiểu sử & Ghi chú</h4>
+          <p class="bg-white p-3 rounded-xl border border-[#e5d8c1] leading-relaxed whitespace-pre-line">${escapeHtml(m.bio || 'Chưa có ghi chú tiểu sử.')}</p>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-[#631212] mb-1.5">Danh sách con (${kids.length})</h4>
+          ${kids.length === 0
+            ? `<p class="text-[#6e5d52] italic">Chưa ghi nhận người con nào.</p>`
+            : `<div class="space-y-1.5">${kids.map(k => `
+                <button onclick="selectMember('${k.id}')" class="w-full text-left px-3 py-2 rounded-lg bg-white hover:bg-[#f5efe2] border border-[#e5d8c1] flex items-center justify-between">
+                  <span class="font-semibold">${escapeHtml(k.name)}</span>
+                  <span class="text-[11px] text-[#6e5d52]">Đời ${k.generation} →</span>
+                </button>
+              `).join('')}</div>`
+          }
+        </div>
+      `;
+
+      drawer.classList.remove('hidden');
+      drawer.classList.add('flex');
+    }
+
+    function populateParentSelect(selectEl, excludeId = null, selectedId = null) {
+      const sorted = [...members].sort((a, b) => a.generation - b.generation || a.name.localeCompare(b.name, 'vi'));
+      const excludedSet = new Set();
+      if (excludeId) {
+        excludedSet.add(excludeId);
+        getDescendants(excludeId).forEach(d => excludedSet.add(d.id));
+      }
+
+      let html = `<option value="">-- Không có cha / Cấp Thủy Tổ (Đời 1) --</option>`;
+      for (const m of sorted) {
+        if (excludedSet.has(m.id)) continue;
+        html += `<option value="${m.id}" ${m.id === selectedId ? 'selected' : ''}>Đời ${m.generation} — ${escapeHtml(m.name)}</option>`;
+      }
+      selectEl.innerHTML = html;
+    }
+
+    function autoCalcGeneration() {
+      const parentId = document.getElementById('mParentId').value;
+      const genInput = document.getElementById('mGeneration');
+      if (!parentId) {
+        genInput.value = 1;
+        return;
+      }
+      const p = members.find(x => x.id === parentId);
+      if (p) {
+        genInput.value = Number(p.generation) + 1;
+      }
+    }
+
+    function openAddModal(defaultParentId = null) {
+      document.getElementById('memberModalTitle').textContent = 'Thêm Thành Viên Mới';
+      document.getElementById('editMemberId').value = '';
+      document.getElementById('memberForm').reset();
+
+      const parentSelect = document.getElementById('mParentId');
+      const fallbackParent = defaultParentId || selectedMemberId || 'g2_ha_quy_ngoc';
+      populateParentSelect(parentSelect, null, fallbackParent);
+      autoCalcGeneration();
+
+      const modal = document.getElementById('memberModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('mName').focus();
+    }
+
+    function openEditModal(id) {
+      const m = members.find(x => x.id === id);
+      if (!m) return;
+
+      document.getElementById('memberModalTitle').textContent = 'Cập Nhật Hồ Sơ: ' + m.name;
+      document.getElementById('editMemberId').value = m.id;
+
+      const parentSelect = document.getElementById('mParentId');
+      populateParentSelect(parentSelect, m.id, m.parentId);
+
+      document.getElementById('mName').value = m.name || '';
+      document.getElementById('mCourtesy').value = m.courtesyName || '';
+      document.getElementById('mGeneration').value = m.generation || 1;
+      document.getElementById('mBirthOrder').value = m.birthOrder || '';
+      document.getElementById('mGender').value = m.gender || 'male';
+      document.getElementById('mStatus').value = m.status || 'alive';
+      document.getElementById('mBirthYear').value = m.birthYear || '';
+      document.getElementById('mDeathYear').value = m.deathYear || '';
+      document.getElementById('mLunarDeath').value = m.lunarDeathDate || '';
+      document.getElementById('mSpouse').value = m.spouse || '';
+      document.getElementById('mBurial').value = m.burialPlace || '';
+      document.getElementById('mAvatar').value = m.avatar || '';
+      document.getElementById('mBio').value = m.bio || '';
+
+      const modal = document.getElementById('memberModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeMemberModal() {
+      const modal = document.getElementById('memberModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleAvatarUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        document.getElementById('mAvatar').value = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function submitMemberForm(event) {
+      event.preventDefault();
+      pushUndoSnapshot();
+
+      const editId = document.getElementById('editMemberId').value;
+      const parentId = document.getElementById('mParentId').value || null;
+      const nextGen = Number(document.getElementById('mGeneration').value) || 1;
+
+      const payload = {
+        name: document.getElementById('mName').value.trim(),
+        courtesyName: document.getElementById('mCourtesy').value.trim(),
+        parentId,
+        generation: nextGen,
+        birthOrder: document.getElementById('mBirthOrder').value.trim(),
+        gender: document.getElementById('mGender').value,
+        status: document.getElementById('mStatus').value,
+        birthYear: document.getElementById('mBirthYear').value.trim(),
+        deathYear: document.getElementById('mDeathYear').value.trim(),
+        lunarDeathDate: document.getElementById('mLunarDeath').value.trim(),
+        spouse: document.getElementById('mSpouse').value.trim(),
+        burialPlace: document.getElementById('mBurial').value.trim(),
+        avatar: document.getElementById('mAvatar').value.trim(),
+        bio: document.getElementById('mBio').value.trim()
+      };
+
+      if (editId) {
+        const idx = members.findIndex(x => x.id === editId);
+        if (idx !== -1) {
+          const oldGen = members[idx].generation;
+          const genDelta = nextGen - oldGen;
+          members[idx] = { ...members[idx], ...payload };
+
+          // Cập nhật chênh lệch Đời cho toàn bộ con cháu nếu đổi cha/đời
+          const updatedDescendants = [];
+          if (genDelta !== 0) {
+            for (const desc of getDescendants(editId)) {
+              const dIdx = members.findIndex(x => x.id === desc.id);
+              if (dIdx !== -1) {
+                members[dIdx].generation = Math.max(1, Number(members[dIdx].generation) + genDelta);
+                updatedDescendants.push(members[dIdx]);
+              }
+            }
+          }
+
+          closeMemberModal();
+          renderAll();
+          selectMember(editId);
+
+          await persistMemberUpsert(members[idx]);
+          for (const d of updatedDescendants) {
+            await persistMemberUpsert(d);
+          }
+        }
+      } else {
+        const newId = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        const newMember = { id: newId, ...payload };
+        members.push(newMember);
+
+        if (parentId) collapsedIds.delete(parentId);
+        closeMemberModal();
+        renderAll();
+        selectMember(newId);
+        focusNodeById(newId);
+
+        await persistMemberUpsert(newMember);
+      }
+    }
+
+    async function deleteMember(id) {
+      const target = members.find(x => x.id === id);
+      if (!target) return;
+      const kids = getChildren(id);
+      const msg = kids.length > 0
+        ? `Xóa "${target.name}" sẽ đồng thời xóa ${kids.length} nhánh/con trực thuộc. Bạn có chắc chắn?`
+        : `Bạn có chắc chắn muốn xóa "${target.name}" khỏi sơ đồ gia phả?`;
+
+      if (!confirm(msg)) return;
+
+      pushUndoSnapshot();
+      const idsToDelete = new Set([id, ...getDescendants(id).map(d => d.id)]);
+      members = members.filter(m => !idsToDelete.has(m.id));
+      if (idsToDelete.has(selectedMemberId)) {
+        closeDetailDrawer();
+      }
+      renderAll();
+
+      for (const delId of idsToDelete) {
+        await persistMemberDelete(delId);
+      }
+    }
+
+    // =========================================================================
+    // 6. NHẬP HÀNG LOẠT (BATCH ADD)
+    // =========================================================================
+    function openBatchModal() {
+      const sel = document.getElementById('batchParentId');
+      populateParentSelect(sel, null, selectedMemberId || 'g2_ha_quy_ngoc');
+      document.getElementById('batchNames').value = '';
+      const modal = document.getElementById('batchModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeBatchModal() {
+      const modal = document.getElementById('batchModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function submitBatchForm(event) {
+      event.preventDefault();
+      const parentId = document.getElementById('batchParentId').value || null;
+      const rawText = document.getElementById('batchNames').value;
+      const names = rawText
+        .split(/[\n,]+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (names.length === 0) return;
+
+      pushUndoSnapshot();
+      const parent = parentId ? members.find(x => x.id === parentId) : null;
+      const gen = parent ? Number(parent.generation) + 1 : 1;
+
+      const created = names.map((nm, i) => ({
+        id: 'm_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 5),
+        parentId,
+        name: nm,
+        courtesyName: '',
+        gender: 'male',
+        generation: gen,
+        birthOrder: '',
+        status: 'alive',
+        birthYear: '',
+        deathYear: '',
+        lunarDeathDate: '',
+        spouse: '',
+        burialPlace: '',
+        bio: '',
+        avatar: ''
+      }));
+
+      members.push(...created);
+      if (parentId) collapsedIds.delete(parentId);
+      closeBatchModal();
+      renderAll();
+
+      for (const item of created) {
+        await persistMemberUpsert(item);
+      }
+    }
+
+    // =========================================================================
+    // 7. BẢNG DANH SÁCH, XUẤT / NHẬP JSON & CSV, KHÔI PHỤC GỐC
+    // =========================================================================
+    function switchView(view) {
+      currentView = view;
+      const isTree = view === 'tree';
+      document.getElementById('treeViewport').classList.toggle('hidden', !isTree);
+      document.getElementById('treeToolbar').classList.toggle('hidden', !isTree);
+      document.getElementById('tableViewport').classList.toggle('hidden', isTree);
+
+      const btnTree = document.getElementById('btnViewTree');
+      const btnTable = document.getElementById('btnViewTable');
+
+      if (isTree) {
+        btnTree.className = 'px-2.5 py-1.5 rounded-md font-semibold bg-[#c59b27] text-[#231914] transition';
+        btnTable.className = 'px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition';
+        renderTree();
+      } else {
+        btnTable.className = 'px-2.5 py-1.5 rounded-md font-semibold bg-[#c59b27] text-[#231914] transition';
+        btnTree.className = 'px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition';
+        renderTable();
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      const q = searchQuery.trim().toLowerCase();
+
+      const filtered = members
+        .filter(m => genFilter === 'ALL' || m.generation === Number(genFilter))
+        .filter(m => !q ||
+          m.name.toLowerCase().includes(q) ||
+          (m.courtesyName || '').toLowerCase().includes(q) ||
+          `đời ${m.generation}`.includes(q)
+        )
+        .sort((a, b) => a.generation - b.generation || a.name.localeCompare(b.name, 'vi'));
+
+      const statusText = {
+        alive: 'Còn sống / Cập nhật',
+        deceased: 'Đã tạ thế',
+        no_issue: '0 con',
+        missing: 'Khuyết tên'
+      };
+
+      tbody.innerHTML = filtered.map(m => {
+        const p = m.parentId ? members.find(x => x.id === m.parentId) : null;
+        return `
+          <tr class="hover:bg-[#f5efe2]/70">
+            <td class="py-2.5 px-3 font-bold text-[#631212]">Đời ${m.generation}</td>
+            <td class="py-2.5 px-3 font-semibold">${escapeHtml(m.name)}</td>
+            <td class="py-2.5 px-3 text-[#6e5d52]">${escapeHtml(m.courtesyName || '—')}</td>
+            <td class="py-2.5 px-3">${p ? escapeHtml(p.name) : 'Thủy Tổ'}</td>
+            <td class="py-2.5 px-3">${escapeHtml((m.birthYear || '?') + ' – ' + (m.deathYear || '?'))}</td>
+            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full bg-[#f5efe2] border border-[#dfd2ba] text-[11px]">${statusText[m.status] || m.status}</span></td>
+            <td class="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
+              <button onclick="selectMember('${m.id}')" class="px-2 py-1 rounded bg-[#f5efe2] hover:bg-[#e7dcc7] font-semibold">Xem</button>
+              <button onclick="openEditModal('${m.id}')" class="px-2 py-1 rounded bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold">Sửa</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(members, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gia-pha-ho-ha-cao-bat-nang.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importJSON(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!Array.isArray(parsed) || parsed.length === 0) {
+            alert('File JSON không hợp lệ hoặc rỗng.');
+            return;
+          }
+          pushUndoSnapshot();
+          members = parsed;
+          saveLocalCache();
+          renderAll();
+          if (supabaseClient) {
+            await supabaseClient.from('family_members').upsert(members.map(memberToRow));
+          }
+          alert('Đã nhập thành công ' + members.length + ' thành viên.');
+        } catch (err) {
+          alert('Lỗi đọc file JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function exportCSV() {
+      const headers = ['ID', 'ParentID', 'Doi', 'HoTen', 'TenHuy', 'ThuTuCon', 'GioiTinh', 'TrangThai', 'NamSinh', 'NamMat', 'NgayGioAmLich', 'VoChong', 'NoiAnTang', 'TieuSu'];
+      const rows = members.map(m => [
+        m.id, m.parentId || '', m.generation, m.name, m.courtesyName || '',
+        m.birthOrder || '', m.gender, m.status, m.birthYear || '',
+        m.deathYear || '', m.lunarDeathDate || '', m.spouse || '',
+        m.burialPlace || '', (m.bio || '').replace(/\r?\n/g, ' ')
+      ]);
+
+      const csvContent = '\uFEFF' + [headers, ...rows]
+        .map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+        .join('\r\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gia-pha-ho-ha-cao-bat-nang.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function resetToOriginalData() {
+      if (!confirm('Khôi phục toàn bộ sơ đồ về dữ liệu gốc 8 đời của Họ Hà - Thôn Cao Bất Nang?')) return;
+      pushUndoSnapshot();
+      const oldIds = members.map(m => m.id);
+      members = JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+      collapsedIds.clear();
+      closeDetailDrawer();
+      saveLocalCache();
+      renderAll();
+
+      if (supabaseClient) {
+        setCloudStatus('syncing', 'Đang khôi phục trên Supabase...');
+        if (oldIds.length > 0) {
+          await supabaseClient.from('family_members').delete().in('id', oldIds);
+        }
+        await supabaseClient.from('family_members').upsert(members.map(memberToRow));
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+      }
+    }
+
+    // =========================================================================
+    // 8. MODAL CẤU HÌNH SUPABASE & TIỆN ÍCH
+    // =========================================================================
+    function openCloudModal() {
+      const cfg = getCloudConfig() || {};
+      document.getElementById('sbUrlInput').value = cfg.url || '';
+      document.getElementById('sbKeyInput').value = cfg.anonKey || '';
+      const modal = document.getElementById('cloudModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeCloudModal() {
+      const modal = document.getElementById('cloudModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function saveCloudConfig(event) {
+      event.preventDefault();
+      const url = document.getElementById('sbUrlInput').value.trim();
+      const anonKey = document.getElementById('sbKeyInput').value.trim();
+      const cfg = { url, anonKey };
+      localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cfg));
+      closeCloudModal();
+      const ok = await initSupabase(cfg);
+      if (ok) {
+        alert('Kết nối và đồng bộ Supabase thành công!');
+      } else {
+        alert('Chưa thể kết nối Supabase. Hãy kiểm tra lại Project URL, anon key và đảm bảo đã chạy lệnh SQL tạo bảng.');
+      }
+    }
+
+    function clearCloudConfig() {
+      localStorage.removeItem(CLOUD_CONFIG_KEY);
+      supabaseClient = null;
+      if (realtimeChannel) realtimeChannel = null;
+      closeCloudModal();
+      setCloudStatus('local', 'Chế độ cục bộ (Đã ngắt Supabase)');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function updateStats() {
+      const maxGen = members.reduce((mx, m) => Math.max(mx, Number(m.generation) || 1), 0);
+      document.getElementById('statsBadge').textContent = `${members.length} thành viên • ${maxGen} đời`;
+    }
+
+    function renderAll() {
+      updateStats();
+      updateUndoButton();
+      renderTree();
+      if (currentView === 'table') renderTable();
+    }
+
+    // =========================================================================
+    // 9. PAN & ZOOM TRÊN VÙNG SƠ ĐỒ
+    // =========================================================================
+    const viewport = document.getElementById('treeViewport');
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.node-card') || e.target.closest('button')) return;
+      isPanning = true;
+      panStartX = e.clientX - panX;
+      panStartY = e.clientY - panY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanning) return;
+      panX = e.clientX - panStartX;
+      panY = e.clientY - panStartY;
+      applyTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isPanning = false;
+    });
+
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.08 : -0.08;
+      zoomBy(delta);
+    }, { passive: false });
+
+    // =========================================================================
+    // 10. KHỞI CHẠY ỨNG DỤNG
+    // =========================================================================
+    (async function boot() {
+      members = loadLocalCache();
+      renderAll();
+      fitTreeToScreen();
+
+      const cfg = getCloudConfig();
+      if (cfg && cfg.url && cfg.anonKey) {
+        await initSupabase(cfg);
+      }
+    })();
+  </script>
+</body>
+</html>
