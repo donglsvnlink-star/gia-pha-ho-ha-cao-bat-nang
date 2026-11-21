@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lora:ital,wght@0,600;0,700;1,600&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --paper: #fdfbf7;
@@ -69,14 +69,20 @@
     }
 
     .font-serif-trad {
-      font-family: 'Playfair Display', Georgia, serif;
+      font-family: 'Playfair Display', 'Lora', Georgia, serif;
+    }
+
+    .font-ancestral {
+      font-family: 'Lora', 'Playfair Display', Georgia, serif;
     }
 
     .canvas-bg {
-      background-color: #f8f3e8;
+      background-color: #f7f0e1;
       background-image:
-        radial-gradient(circle at 1px 1px, rgba(139, 30, 30, 0.08) 1px, transparent 0);
-      background-size: 24px 24px;
+        radial-gradient(circle at 50% 0%, rgba(197, 155, 39, 0.12), transparent 62%),
+        linear-gradient(to right, rgba(139, 30, 30, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(139, 30, 30, 0.035) 1px, transparent 1px);
+      background-size: 100% 100%, 48px 48px, 48px 48px;
     }
 
     .node-card {
@@ -85,7 +91,28 @@
 
     .node-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 24px -8px rgba(99, 18, 18, 0.22);
+      box-shadow: 0 14px 26px -8px rgba(99, 18, 18, 0.28);
+    }
+
+    .card-founder {
+      background: linear-gradient(145deg, #7c1515 0%, #560d0d 55%, #3d0808 100%);
+      border-color: #e6be4a !important;
+      color: #fff9ea;
+      box-shadow: 0 8px 22px -6px rgba(86, 13, 13, 0.45), inset 0 0 0 1.5px rgba(244, 231, 190, 0.45);
+    }
+
+    .card-forefather {
+      background: linear-gradient(145deg, #931d1d 0%, #681212 100%);
+      border-color: #d4a82f !important;
+      color: #fff9ea;
+      box-shadow: 0 6px 18px -6px rgba(104, 18, 18, 0.36), inset 0 0 0 1px rgba(244, 231, 190, 0.35);
+    }
+
+    .card-early-branch {
+      background: linear-gradient(180deg, #fffdf9 0%, #fbf3e1 100%);
+      border-color: #c59b27 !important;
+      color: #231914;
+      box-shadow: 0 4px 12px -4px rgba(139, 30, 30, 0.14);
     }
 
     .node-card:hover .quick-actions {
@@ -271,6 +298,16 @@
       <div id="treeWorld" class="origin-top-left absolute top-0 left-0">
         <svg id="treeSvg" class="absolute top-0 left-0 pointer-events-none" style="z-index: 1;"></svg>
         <div id="treeNodesLayer" class="relative" style="z-index: 2;"></div>
+      </div>
+
+      <!-- NÚT TÔN KÍNH NHANH TỚI THỦY TỔ & TIỀN TỔ -->
+      <div class="absolute top-3 left-3 sm:left-4 z-20 flex items-center gap-1.5 flex-wrap">
+        <button onclick="focusNodeById('g1_thuy_to'); selectMember('g1_thuy_to');" class="px-2.5 py-1 rounded-full bg-[#631212]/95 hover:bg-[#8b1e1e] text-[#fff8e7] border border-[#c59b27] shadow text-[11px] font-semibold transition flex items-center gap-1">
+          <span>✦</span><span>Thủy Tổ (Đời 1)</span>
+        </button>
+        <button onclick="focusNodeById('g2_ha_quy_ngoc'); selectMember('g2_ha_quy_ngoc');" class="px-2.5 py-1 rounded-full bg-[#8b1e1e]/95 hover:bg-[#a32424] text-[#f4e7be] border border-[#c59b27]/70 shadow text-[11px] font-semibold transition flex items-center gap-1">
+          <span>❖</span><span>Tiền Tổ (Đời 2)</span>
+        </button>
       </div>
 
       <!-- LEGEND -->
@@ -880,10 +917,10 @@
     }
 
     function computeLayout() {
-      const NODE_W = 196;
-      const NODE_H = 88;
-      const GAP_X = 22;
-      const GAP_Y = 74;
+      const NODE_W = 208;
+      const NODE_H = 96;
+      const GAP_X = 24;
+      const GAP_Y = 78;
 
       const positions = new Map();
       const childrenMap = new Map();
@@ -1009,17 +1046,30 @@
           (m.spouse || '').toLowerCase().includes(q)
         );
 
-        let cardTheme = 'bg-white border-[#c59b27] text-[#231914]';
-        if (m.generation === 1 || m.generation === 2) {
-          cardTheme = 'bg-gradient-to-br from-[#8b1e1e] to-[#631212] border-[#f4e7be] text-[#fff8e7]';
+        const isFounder = m.generation === 1;
+        const isForefather = m.generation === 2;
+        const isAncestor = isFounder || isForefather;
+        const isEarlyBranch = m.generation === 3 || m.generation === 4;
+
+        let cardTheme = 'bg-white border-[#d6c29a] text-[#231914] shadow-sm';
+        if (isFounder) {
+          cardTheme = 'card-founder border-2';
+        } else if (isForefather) {
+          cardTheme = 'card-forefather border-2';
         } else if (m.status === 'missing' || m.status === 'no_issue') {
-          cardTheme = 'bg-stone-100 border-dashed border-stone-400 text-stone-700';
+          cardTheme = 'bg-stone-100/95 border-dashed border-stone-400 text-stone-700';
         } else if (m.gender === 'female') {
-          cardTheme = 'bg-rose-50/90 border-rose-300 text-[#231914]';
+          cardTheme = 'bg-rose-50/95 border-rose-300 text-[#231914]';
+        } else if (isEarlyBranch) {
+          cardTheme = 'card-early-branch border-2';
         }
 
-        const isAncestor = m.generation === 1 || m.generation === 2;
-        const subBadgeClass = isAncestor ? 'bg-[#f4e7be]/20 text-[#f4e7be]' : 'bg-[#f5efe2] text-[#6e5d52]';
+        const subBadgeClass = isAncestor
+          ? 'bg-[#f4e7be]/25 text-[#f9e9b8] border border-[#f4e7be]/40'
+          : (isEarlyBranch ? 'bg-[#8b1e1e]/12 text-[#631212] font-bold' : 'bg-[#f5efe2] text-[#6e5d52]');
+
+        const honorTitle = isFounder ? 'ĐỨC THỦY TỔ' : (isForefather ? 'ĐỨC TIỀN TỔ' : `Đời ${m.generation}`);
+        const nameFontClass = isAncestor ? 'font-serif-trad text-sm tracking-wide font-extrabold' : (isEarlyBranch ? 'font-ancestral text-[13px] font-bold' : 'text-xs sm:text-[13px] font-bold');
 
         cardsHtml += `
           <div
@@ -1040,16 +1090,16 @@
 
             <div class="flex items-start gap-2 min-w-0">
               ${m.avatar
-                ? `<img src="${m.avatar}" alt="${escapeHtml(m.name)}" class="w-9 h-9 rounded-lg object-cover border border-[#c59b27]/60 shrink-0" />`
-                : `<div class="w-9 h-9 rounded-lg ${isAncestor ? 'bg-[#490b0b] text-[#f4e7be] border border-[#c59b27]/60' : 'bg-[#8b1e1e]/10 text-[#8b1e1e]'} flex items-center justify-center font-serif-trad font-bold text-sm shrink-0">${escapeHtml((m.name || '?')[0])}</div>`
+                ? `<img src="${m.avatar}" alt="${escapeHtml(m.name)}" class="w-10 h-10 rounded-lg object-cover border border-[#c59b27]/70 shrink-0" />`
+                : `<div class="w-10 h-10 rounded-lg ${isAncestor ? 'bg-[#3b0707] text-[#f7e5a6] border border-[#e6be4a]' : (isEarlyBranch ? 'bg-[#8b1e1e]/15 text-[#631212] border border-[#c59b27]/50' : 'bg-[#8b1e1e]/10 text-[#8b1e1e]')} flex items-center justify-center font-serif-trad font-bold text-base shrink-0">${escapeHtml((m.name || '?')[0])}</div>`
               }
               <div class="min-w-0 flex-1">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${subBadgeClass}">Đời ${m.generation}</span>
-                  ${m.birthOrder ? `<span class="text-[10px] truncate opacity-80">${escapeHtml(m.birthOrder)}</span>` : ''}
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${subBadgeClass}">${escapeHtml(honorTitle)}</span>
+                  ${m.birthOrder && !isAncestor ? `<span class="text-[10px] truncate opacity-80">${escapeHtml(m.birthOrder)}</span>` : ''}
                 </div>
-                <div class="font-bold text-xs sm:text-[13px] truncate mt-0.5">${escapeHtml(m.name)}</div>
-                ${m.courtesyName ? `<div class="text-[10px] truncate opacity-85">${escapeHtml(m.courtesyName)}</div>` : ''}
+                <div class="${nameFontClass} truncate mt-0.5">${escapeHtml(m.name)}</div>
+                ${m.courtesyName ? `<div class="font-ancestral italic text-[10.5px] truncate ${isAncestor ? 'text-[#f4e7be]' : 'opacity-85'}">${escapeHtml(m.courtesyName)}</div>` : ''}
               </div>
             </div>
 
