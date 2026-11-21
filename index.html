@@ -585,7 +585,7 @@
       </div>
       <form onsubmit="saveCloudConfig(event)" class="p-5 space-y-3.5 text-xs">
         <p class="text-[#6e5d52] leading-relaxed">
-          Nhập <strong>Project URL</strong> và <strong>Publishable / anon key</strong> từ mục <em>Project Settings &gt; API</em> trên Supabase để mọi người cùng xem và cập nhật đồng bộ.
+          Nhập <strong>Project URL</strong> và <strong>Publishable / anon key</strong> từ mục <em>Project Settings &gt; API</em> trên Supabase để mọi người cùng xem và cập nhật đồng bộ cả <code>family_members</code> lẫn <code>archive_photos</code>.
         </p>
         <div>
           <label class="block font-semibold text-[#631212] mb-1">Supabase Project URL</label>
@@ -722,7 +722,7 @@
 
   <script>
     // =========================================================================
-    // 1. DỮ LIỆU GỐC 8 ĐỜI: SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO Bạt NANG
+    // 1. DỮ LIỆU GỐC 8 ĐỜI: SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO BẠT NANG
     // =========================================================================
     const INITIAL_MEMBERS = [
       // ĐỜI 1: THỦY TỔ
@@ -860,6 +860,7 @@
 
     let supabaseClient = null;
     let realtimeChannel = null;
+    let archiveRealtimeChannel = null;
 
     // Pan & Zoom state
     let scale = 0.88;
@@ -929,6 +930,47 @@
       };
     }
 
+    function rowToArchivePhoto(row) {
+      let parsedTags = [];
+      if (Array.isArray(row.tagged_member_ids)) {
+        parsedTags = row.tagged_member_ids;
+      } else if (typeof row.tagged_member_ids === 'string' && row.tagged_member_ids.trim()) {
+        try {
+          const tmp = JSON.parse(row.tagged_member_ids);
+          if (Array.isArray(tmp)) parsedTags = tmp;
+        } catch {}
+      }
+
+      return {
+        id: row.id,
+        title: row.title || '',
+        category: row.category || 'tomb',
+        dateTaken: row.date_taken || '',
+        location: row.location || '',
+        relatedAncestorId: row.related_ancestor_id || '',
+        taggedMemberIds: parsedTags,
+        imageUrl: row.image_url || '',
+        caption: row.caption || '',
+        isSample: Boolean(row.is_sample)
+      };
+    }
+
+    function archivePhotoToRow(p) {
+      return {
+        id: p.id,
+        title: p.title || '',
+        category: p.category || 'tomb',
+        date_taken: p.dateTaken || '',
+        location: p.location || '',
+        related_ancestor_id: p.relatedAncestorId || '',
+        tagged_member_ids: Array.isArray(p.taggedMemberIds) ? p.taggedMemberIds : [],
+        image_url: p.imageUrl || '',
+        caption: p.caption || '',
+        is_sample: Boolean(p.isSample),
+        updated_at: new Date().toISOString()
+      };
+    }
+
     function saveLocalCache() {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(members));
@@ -952,8 +994,7 @@
       try {
         localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(archivePhotos));
       } catch (e) {
-        alert('Dung lượng bộ nhớ trình duyệt đầy do ảnh quá lớn. Hãy chọn ảnh dung lượng nhẹ hơn hoặc dùng link ảnh.');
-        console.warn('Không thể lưu archivePhotos:', e);
+        console.warn('Không thể lưu archivePhotos vào localStorage (có thể do dung lượng ảnh lớn):', e);
       }
     }
 
@@ -966,6 +1007,57 @@
         }
       } catch {}
       return JSON.parse(JSON.stringify(INITIAL_ARCHIVE_PHOTOS));
+    }
+
+    async function refreshArchiveFromCloud() {
+      if (!supabaseClient) return;
+      const { data, error } = await supabaseClient.from('archive_photos').select('*');
+      if (error) {
+        console.warn('Không thể tải archive_photos từ Supabase:', error.message);
+        return;
+      }
+      if (Array.isArray(data) && data.length > 0) {
+        archivePhotos = data.map(rowToArchivePhoto);
+        saveArchiveCache();
+      } else if (Array.isArray(data) && data.length === 0) {
+        // Bảng archive_photos đang trống trên DB: đẩy dữ liệu hiện tại lên để khởi tạo
+        const rows = archivePhotos.map(archivePhotoToRow);
+        if (rows.length > 0) {
+          await supabaseClient.from('archive_photos').upsert(rows);
+        }
+      }
+      if (currentView === 'archive') renderArchiveGallery();
+      if (selectedMemberId) {
+        const m = members.find(x => x.id === selectedMemberId);
+        if (m) renderDetailDrawer(m);
+      }
+    }
+
+    async function persistArchivePhotoUpsert(photo) {
+      saveArchiveCache();
+      if (!supabaseClient) return;
+      setCloudStatus('syncing', 'Đang lưu ảnh tư liệu lên Supabase...');
+      const { error } = await supabaseClient.from('archive_photos').upsert(archivePhotoToRow(photo));
+      if (error) {
+        console.error('Lỗi ghi archive_photos lên Supabase:', error);
+        alert('Đã lưu trên máy này nhưng chưa đồng bộ được ảnh lên Supabase: ' + error.message);
+        setCloudStatus('local', 'Lỗi ghi archive_photos trên Supabase');
+      } else {
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+      }
+    }
+
+    async function persistArchivePhotoDelete(id) {
+      saveArchiveCache();
+      if (!supabaseClient) return;
+      setCloudStatus('syncing', 'Đang xóa ảnh tư liệu trên Supabase...');
+      const { error } = await supabaseClient.from('archive_photos').delete().eq('id', id);
+      if (error) {
+        console.error('Lỗi xóa archive_photos trên Supabase:', error);
+        setCloudStatus('local', 'Lỗi xóa archive_photos trên Supabase');
+      } else {
+        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+      }
     }
 
     async function initSupabase(cfg) {
@@ -995,6 +1087,7 @@
           saveLocalCache();
         }
 
+        await refreshArchiveFromCloud();
         setupRealtimeSubscription();
         setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
         renderAll();
@@ -1011,6 +1104,9 @@
       if (realtimeChannel) {
         supabaseClient.removeChannel(realtimeChannel);
       }
+      if (archiveRealtimeChannel) {
+        supabaseClient.removeChannel(archiveRealtimeChannel);
+      }
 
       realtimeChannel = supabaseClient
         .channel('family_members_realtime')
@@ -1020,6 +1116,22 @@
             members = data.map(rowToMember);
             saveLocalCache();
             renderAll();
+            if (selectedMemberId) {
+              const found = members.find(x => x.id === selectedMemberId);
+              if (found) renderDetailDrawer(found);
+            }
+          }
+        })
+        .subscribe();
+
+      archiveRealtimeChannel = supabaseClient
+        .channel('archive_photos_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'archive_photos' }, async () => {
+          const { data, error } = await supabaseClient.from('archive_photos').select('*');
+          if (!error && Array.isArray(data)) {
+            archivePhotos = data.map(rowToArchivePhoto);
+            saveArchiveCache();
+            if (currentView === 'archive') renderArchiveGallery();
             if (selectedMemberId) {
               const found = members.find(x => x.id === selectedMemberId);
               if (found) renderDetailDrawer(found);
@@ -1057,6 +1169,7 @@
 
     async function syncNowToCloud() {
       saveLocalCache();
+      saveArchiveCache();
       if (!supabaseClient) {
         openCloudModal();
         return;
@@ -1064,12 +1177,24 @@
       setCloudStatus('syncing', 'Đang đồng bộ toàn bộ...');
       const { error } = await supabaseClient.from('family_members').upsert(members.map(memberToRow));
       if (error) {
-        alert('Đồng bộ thất bại: ' + error.message);
+        alert('Đồng bộ thành viên thất bại: ' + error.message);
         setCloudStatus('local', 'Lỗi đồng bộ Supabase');
-      } else {
-        setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
-        alert('Đã đồng bộ toàn bộ ' + members.length + ' thành viên lên Supabase!');
+        return;
       }
+
+      if (archivePhotos.length > 0) {
+        const { error: photoErr } = await supabaseClient
+          .from('archive_photos')
+          .upsert(archivePhotos.map(archivePhotoToRow));
+        if (photoErr) {
+          alert('Đã đồng bộ thành viên nhưng lỗi đồng bộ ảnh lăng mộ: ' + photoErr.message);
+          setCloudStatus('local', 'Lỗi đồng bộ archive_photos');
+          return;
+        }
+      }
+
+      setCloudStatus('connected', 'Đã đồng bộ Supabase Realtime');
+      alert('Đã đồng bộ toàn bộ ' + members.length + ' thành viên và ' + archivePhotos.length + ' ảnh tư liệu lên Supabase!');
     }
 
     // =========================================================================
@@ -1956,7 +2081,7 @@
                   <button onclick="openPhotoModal('${p.id}')" class="px-2.5 py-1 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold">
                     Sửa / Thay ảnh
                   </button>
-                  <button onclick="deleteArchivePhoto('${p.id}')" class="px-2 py-1 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 font-semibold">
+                  <button onclick="deleteArchivePhoto('${p.id}')" class="px-2.5 py-1 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 font-semibold">
                     Xóa
                   </button>
                 </div>
@@ -2033,7 +2158,7 @@
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const MAX_W = 1400;
+          const MAX_W = 1280;
           let w = img.width;
           let h = img.height;
           if (w > MAX_W) {
@@ -2045,7 +2170,7 @@
           canvas.height = h;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78);
           document.getElementById('pImageUrl').value = compressedDataUrl;
           updatePhotoPreview(compressedDataUrl);
         };
@@ -2097,7 +2222,7 @@
       modal.classList.remove('flex');
     }
 
-    function submitPhotoForm(event) {
+    async function submitPhotoForm(event) {
       event.preventDefault();
       const editId = document.getElementById('editPhotoId').value;
       const imageUrl = document.getElementById('pImageUrl').value.trim();
@@ -2116,38 +2241,46 @@
         isSample: false
       };
 
+      let savedPhoto = null;
       if (editId) {
         const idx = archivePhotos.findIndex(x => x.id === editId);
         if (idx !== -1) {
           archivePhotos[idx] = { ...archivePhotos[idx], ...payload };
+          savedPhoto = archivePhotos[idx];
         }
       } else {
-        archivePhotos.unshift({
+        savedPhoto = {
           id: 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
           ...payload
-        });
+        };
+        archivePhotos.unshift(savedPhoto);
       }
 
-      saveArchiveCache();
       closePhotoModal();
       renderArchiveGallery();
       if (selectedMemberId) {
         const m = members.find(x => x.id === selectedMemberId);
         if (m) renderDetailDrawer(m);
       }
+
+      if (savedPhoto) {
+        await persistArchivePhotoUpsert(savedPhoto);
+      } else {
+        saveArchiveCache();
+      }
     }
 
-    function deleteArchivePhoto(id) {
+    async function deleteArchivePhoto(id) {
       const p = archivePhotos.find(x => x.id === id);
       if (!p) return;
       if (!confirm(`Xóa hình ảnh "${p.title}" khỏi kho tư liệu?`)) return;
       archivePhotos = archivePhotos.filter(x => x.id !== id);
-      saveArchiveCache();
       renderArchiveGallery();
       if (selectedMemberId) {
         const m = members.find(x => x.id === selectedMemberId);
         if (m) renderDetailDrawer(m);
       }
+      await persistArchivePhotoDelete(id);
     }
 
     function openLightbox(photoId) {
@@ -2291,6 +2424,9 @@
           if (currentView === 'archive') renderArchiveGallery();
           if (supabaseClient) {
             await supabaseClient.from('family_members').upsert(members.map(memberToRow));
+            if (Array.isArray(parsed?.archivePhotos) && parsed.archivePhotos.length > 0) {
+              await supabaseClient.from('archive_photos').upsert(parsed.archivePhotos.map(archivePhotoToRow));
+            }
           }
           alert('Đã nhập thành công ' + members.length + ' thành viên' + (Array.isArray(parsed?.archivePhotos) ? ` và ${parsed.archivePhotos.length} hình ảnh tư liệu.` : '.'));
         } catch (err) {
@@ -2370,16 +2506,21 @@
       closeCloudModal();
       const ok = await initSupabase(cfg);
       if (ok) {
-        alert('Kết nối và đồng bộ Supabase thành công!');
+        alert('Kết nối và đồng bộ Supabase (thành viên & ảnh tư liệu) thành công!');
       } else {
-        alert('Chưa thể kết nối Supabase. Hãy kiểm tra lại Project URL, anon key và đảm bảo đã chạy lệnh SQL tạo bảng.');
+        alert('Chưa thể kết nối Supabase. Hãy kiểm tra lại Project URL, anon key và đảm bảo đã chạy lệnh SQL tạo bảng family_members và archive_photos.');
       }
     }
 
     function clearCloudConfig() {
       localStorage.removeItem(CLOUD_CONFIG_KEY);
       supabaseClient = null;
-      if (realtimeChannel) realtimeChannel = null;
+      if (realtimeChannel) {
+        realtimeChannel = null;
+      }
+      if (archiveRealtimeChannel) {
+        archiveRealtimeChannel = null;
+      }
       closeCloudModal();
       setCloudStatus('local', 'Chế độ cục bộ (Đã ngắt Supabase)');
     }
@@ -2402,6 +2543,7 @@
       updateUndoButton();
       renderTree();
       if (currentView === 'table') renderTable();
+      if (currentView === 'archive') renderArchiveGallery();
     }
 
     // =========================================================================
