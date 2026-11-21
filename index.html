@@ -166,6 +166,9 @@
             <h1 class="font-serif-trad font-bold text-base sm:text-lg tracking-wide text-[#fff8e7]">
               SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO BẠT NANG
             </h1>
+            <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-[#c59b27]/20 text-[#f7e5a6] border border-[#c59b27]/60 tracking-wide">
+              Phiên bản v2.0 • 2026
+            </span>
             <span id="cloudStatusBadge" onclick="openCloudModal()" title="Nhấn để cấu hình Supabase" class="cursor-pointer text-[11px] px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-200 border border-amber-400/50 flex items-center gap-1.5">
               <span id="cloudDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
               <span id="cloudStatusText">Chế độ cục bộ (Chưa cấu hình Supabase)</span>
@@ -710,6 +713,24 @@
       </form>
     </div>
   </div>
+
+  <!-- THANH BẢN QUYỀN & PHÂN CÔNG BIÊN TẬP / KỸ THUẬT -->
+  <footer class="bg-[#560e0e] text-[#f4e7be] border-t border-[#c59b27]/75 px-3 sm:px-5 py-1.5 z-30 shrink-0 text-[11px] flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="px-1.5 py-0.5 rounded bg-[#c59b27] text-[#231914] font-bold text-[10px]">Bản quyền © Họ Hà - Cao Bạt Nang</span>
+      <span class="text-[#f7e5a6]/90">•</span>
+      <span><strong class="text-[#fff8e7] font-semibold">Biên tập nội dung:</strong> Ông Hà Đăng</span>
+      <span class="text-[#f7e5a6]/70">•</span>
+      <span><strong class="text-[#fff8e7] font-semibold">Kỹ thuật &amp; Thiết kế:</strong> Ông Hà Duy Đông</span>
+      <span class="text-[#f7e5a6]/70">•</span>
+      <span class="text-[#e5cfa0] italic">Hội đồng gia tộc &amp; Ban biên soạn</span>
+    </div>
+    <div class="flex items-center gap-2 text-[10.5px] text-[#f3dfc1]">
+      <span class="font-semibold text-[#f7e5a6]">Phiên bản v2.0</span>
+      <span>•</span>
+      <span>Cập nhật 2026</span>
+    </div>
+  </footer>
 
   <!-- MODAL: LIGHTBOX XEM ẢNH PHÓNG TO -->
   <div id="lightboxModal" onclick="if(event.target===this) closeLightbox()" class="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-6">
