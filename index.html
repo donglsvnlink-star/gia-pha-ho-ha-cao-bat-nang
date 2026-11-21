@@ -817,6 +817,11 @@
     // =========================================================================
     // 2. TRẠNG THÁI ỨNG DỤNG & SUPABASE CLIENT
     // =========================================================================
+    const DEFAULT_SUPABASE_CONFIG = {
+      url: 'https://fnfblqmxwqqmmgwmxpjj.supabase.co',
+      anonKey: 'sb_publishable_VrvNcsDKuXJNZFTqF1h6XA_XweNbIS3'
+    };
+
     const LOCAL_STORAGE_KEY = 'gia_pha_ho_ha_cao_bat_nang_v1';
     const ARCHIVE_STORAGE_KEY = 'gia_pha_ho_ha_archive_photos_v1';
     const CLOUD_CONFIG_KEY = 'gia_pha_ho_ha_supabase_cfg_v1';
@@ -931,10 +936,19 @@
       }
 
       try {
-        return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || 'null');
-      } catch {
-        return null;
-      }
+        const rawSaved = localStorage.getItem(CLOUD_CONFIG_KEY);
+        if (rawSaved !== null) {
+          const saved = JSON.parse(rawSaved);
+          if (saved && saved.url === '' && saved.anonKey === '') {
+            return null;
+          }
+          if (saved && saved.url && saved.anonKey) {
+            return saved;
+          }
+        }
+      } catch {}
+
+      return { ...DEFAULT_SUPABASE_CONFIG };
     }
 
     async function pullLatestFromCloud(showSyncing = false) {
@@ -963,8 +977,9 @@
         let photoChanged = false;
         if (!photoErr && Array.isArray(photoRows)) {
           const cloudPhotos = photoRows.map(rowToArchivePhoto);
-          if (JSON.stringify(cloudPhotos) !== JSON.stringify(archivePhotos)) {
-            archivePhotos = cloudPhotos;
+          const mergedPhotos = mergeArchivePhotos(cloudPhotos, archivePhotos);
+          if (JSON.stringify(mergedPhotos) !== JSON.stringify(archivePhotos)) {
+            archivePhotos = mergedPhotos;
             saveArchiveCache();
             photoChanged = true;
           }
@@ -1125,6 +1140,33 @@
       return JSON.parse(JSON.stringify(INITIAL_ARCHIVE_PHOTOS));
     }
 
+    function mergeArchivePhotos(cloudList, localList) {
+      const map = new Map();
+      // Đưa ảnh thực tế (không phải ảnh khung mẫu) từ local trước nếu cloud chưa có
+      for (const lp of (localList || [])) {
+        if (lp && lp.id && !lp.isSample) {
+          map.set(lp.id, lp);
+        }
+      }
+      for (const cp of (cloudList || [])) {
+        if (cp && cp.id) {
+          // Nếu bản ghi trên cloud vẫn là khung mẫu nhưng trên máy này đã có ảnh thực tế (không phải mẫu) thì giữ ảnh thực tế
+          const existing = map.get(cp.id);
+          if (cp.isSample && existing && !existing.isSample) {
+            continue;
+          }
+          map.set(cp.id, cp);
+        }
+      }
+      const merged = Array.from(map.values());
+      // Nếu đã có ảnh thật thì loại bỏ khung mẫu mặc định để danh sách gọn gàng
+      const hasRealPhoto = merged.some(p => !p.isSample);
+      if (hasRealPhoto) {
+        return merged.filter(p => !p.isSample);
+      }
+      return merged.length > 0 ? merged : JSON.parse(JSON.stringify(INITIAL_ARCHIVE_PHOTOS));
+    }
+
     async function refreshArchiveFromCloud() {
       if (!supabaseClient) return;
       const { data, error } = await supabaseClient.from('archive_photos').select('*');
@@ -1133,8 +1175,17 @@
         return;
       }
       if (Array.isArray(data) && data.length > 0) {
-        archivePhotos = data.map(rowToArchivePhoto);
+        const cloudPhotos = data.map(rowToArchivePhoto);
+        const merged = mergeArchivePhotos(cloudPhotos, archivePhotos);
+        archivePhotos = merged;
         saveArchiveCache();
+
+        // Nếu trên máy có ảnh thật mới mà cloud chưa có (hoặc đang là khung mẫu), tự động đẩy lên cloud
+        const cloudIds = new Set(cloudPhotos.map(x => x.id));
+        const realLocalOnly = archivePhotos.filter(p => !p.isSample && (!cloudIds.has(p.id) || cloudPhotos.find(c => c.id === p.id)?.isSample));
+        if (realLocalOnly.length > 0) {
+          await supabaseClient.from('archive_photos').upsert(realLocalOnly.map(archivePhotoToRow));
+        }
       } else if (Array.isArray(data) && data.length === 0) {
         // Bảng archive_photos đang trống trên DB: đẩy dữ liệu hiện tại lên để khởi tạo
         const rows = archivePhotos.map(archivePhotoToRow);
@@ -1246,7 +1297,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'archive_photos' }, async () => {
           const { data, error } = await supabaseClient.from('archive_photos').select('*');
           if (!error && Array.isArray(data)) {
-            archivePhotos = data.map(rowToArchivePhoto);
+            archivePhotos = mergeArchivePhotos(data.map(rowToArchivePhoto), archivePhotos);
             saveArchiveCache();
             if (currentView === 'archive') renderArchiveGallery();
             if (selectedMemberId) {
@@ -2689,7 +2740,7 @@
     }
 
     function clearCloudConfig() {
-      localStorage.removeItem(CLOUD_CONFIG_KEY);
+      localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify({ url: '', anonKey: '' }));
       supabaseClient = null;
       if (realtimeChannel) {
         realtimeChannel = null;
@@ -2861,6 +2912,7 @@
       const cfg = getCloudConfig();
       if (cfg && cfg.url && cfg.anonKey) {
         await initSupabase(cfg);
+        await pullLatestFromCloud(false);
       }
     })();
   </script>
