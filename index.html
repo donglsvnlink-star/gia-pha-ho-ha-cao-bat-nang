@@ -135,6 +135,65 @@
       50% { box-shadow: 0 0 0 10px rgba(197, 155, 39, 0); }
     }
 
+
+    /* Chế độ xem tập trung vào 1 nhánh cụ thể */
+    .branch-focus-banner {
+      background: linear-gradient(90deg, #631212 0%, #8b1e1e 50%, #631212 100%);
+      border: 1.5px solid #e6be4a;
+      box-shadow: 0 8px 24px -6px rgba(86, 13, 13, 0.45);
+    }
+
+    /* Giao diện trang in / xuất PDF đẹp */
+    #printSheetView {
+      display: none;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 12mm;
+      }
+      body {
+        overflow: visible !important;
+        height: auto !important;
+        background: #ffffff !important;
+        color: #231914 !important;
+        user-select: text !important;
+      }
+      body.force-mobile-mode #appContainer {
+        max-width: none !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      #appContainer > header,
+      #appContainer > main,
+      #appContainer > footer,
+      #memberModal,
+      #batchModal,
+      #cloudModal,
+      #photoModal,
+      #lightboxModal,
+      #printOptionsModal {
+        display: none !important;
+      }
+      #printSheetView {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        color: #231914 !important;
+        padding: 0 !important;
+      }
+      .print-page-break {
+        page-break-before: always;
+        break-before: page;
+      }
+      .print-avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+
     ::-webkit-scrollbar {
       width: 7px;
       height: 7px;
@@ -202,6 +261,9 @@
           <button id="btnViewArchive" onclick="switchView('archive')" class="px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition flex items-center gap-1">
             <span>🏛️</span><span>Tư liệu &amp; Lăng mộ</span>
           </button>
+          <button id="btnViewMemorial" onclick="switchView('memorial')" class="px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition flex items-center gap-1">
+            <span>🕯️</span><span>Sổ giỗ &amp; Thống kê</span>
+          </button>
         </div>
 
         <button onclick="openAddModal(null)" class="px-3 py-1.5 rounded-lg bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-semibold text-xs flex items-center gap-1 shadow transition">
@@ -218,6 +280,10 @@
 
         <button onclick="openCloudModal()" class="px-2.5 py-1.5 rounded-lg bg-[#490b0b] hover:bg-[#761616] text-[#f4e7be] border border-[#c59b27]/50 text-xs font-medium transition">
           Cấu hình DB
+        </button>
+
+        <button onclick="openPrintModal()" title="In hoặc xuất PDF trang hồ sơ, danh sách hoặc sổ ngày giỗ" class="px-2.5 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#a32424] text-[#fff8e7] border border-[#c59b27]/70 font-semibold text-xs flex items-center gap-1 transition">
+          <span>🖨️</span><span class="hidden sm:inline">In / Xuất PDF</span>
         </button>
 
         <div class="relative group">
@@ -281,6 +347,16 @@
           Thu gọn tới Đời 4
         </button>
 
+        <div class="flex items-center gap-1.5 bg-white/90 px-2 py-1 rounded-lg border border-[#c59b27]/80">
+          <span class="text-[11px] font-bold text-[#631212]">🌿 Nhánh:</span>
+          <select id="branchFocusSelect" onchange="setFocusedBranch(this.value)" class="bg-transparent font-semibold text-[#231914] focus:outline-none text-xs max-w-[190px] sm:max-w-[230px]">
+            <option value="">Toàn bộ dòng họ (8 đời)</option>
+          </select>
+          <button id="btnClearBranchFocus" onclick="clearBranchFocus()" class="hidden px-1.5 py-0.5 rounded bg-[#8b1e1e] text-white text-[10px] font-bold hover:bg-[#631212]">
+            Bỏ lọc
+          </button>
+        </div>
+
         <span id="statsBadge" class="ml-1 px-2.5 py-1 rounded-full bg-[#8b1e1e]/10 text-[#631212] font-semibold">
           0 thành viên
         </span>
@@ -293,6 +369,14 @@
         <button onclick="fitTreeToScreen()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-[#efe6d5] border border-[#cbb796] font-medium">
           Căn vừa màn hình
         </button>
+      </div>
+      <!-- THANH ĐƯỜNG DẪN NHÁNH (BREADCRUMB) -->
+      <div id="branchBreadcrumbBar" class="w-full pt-1.5 mt-1.5 border-t border-[#e5d8c1] flex items-center justify-between gap-2 flex-wrap text-[11px]">
+        <div id="breadcrumbTrail" class="flex items-center gap-1 flex-wrap text-[#231914]">
+          <span class="font-bold text-[#631212]">📍 Đường dẫn nhánh:</span>
+          <span class="text-[#6e5d52] italic">Chọn một thành viên trên sơ đồ để xem chuỗi tổ tiên từ Thủy Tổ tới người đó.</span>
+        </div>
+        <div id="breadcrumbActions" class="flex items-center gap-1.5"></div>
       </div>
     </div>
   </header>
@@ -314,6 +398,22 @@
         <button onclick="focusNodeById('g2_ha_quy_ngoc'); selectMember('g2_ha_quy_ngoc');" class="px-2.5 py-1 rounded-full bg-[#8b1e1e]/95 hover:bg-[#a32424] text-[#f4e7be] border border-[#c59b27]/70 shadow text-[11px] font-semibold transition flex items-center gap-1">
           <span>❖</span><span>Tiền Tổ (Đời 2)</span>
         </button>
+      </div>
+
+      <!-- BANNER CHẾ ĐỘ XEM TẬP TRUNG 1 NHÁNH -->
+      <div id="branchFocusBanner" class="hidden branch-focus-banner text-[#fff8e7] px-3.5 py-2 rounded-xl absolute top-12 left-3 sm:left-4 z-20 flex items-center gap-3 text-xs max-w-[92vw]">
+        <div class="min-w-0">
+          <div class="text-[10px] uppercase tracking-wider text-[#f7e5a6] font-bold">Chế độ tập trung 1 nhánh</div>
+          <div id="branchFocusLabel" class="font-bold truncate">Đang xem nhánh...</div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="focusNodeById(focusedBranchRootId)" class="px-2 py-1 rounded bg-[#c59b27] text-[#231914] font-bold text-[11px] hover:bg-[#d8ad34]">
+            Căn giữa nhánh
+          </button>
+          <button onclick="clearBranchFocus()" class="px-2 py-1 rounded bg-white/15 hover:bg-white/25 text-white font-semibold text-[11px]">
+            Xem toàn họ
+          </button>
+        </div>
       </div>
 
       <!-- LEGEND -->
@@ -428,6 +528,109 @@
 
         <!-- Lưới hiển thị Album ảnh -->
         <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8"></div>
+      </div>
+    </div>
+
+
+    <!-- MEMORIAL BOOK & GENERATION STATISTICS VIEW (SỔ NGÀY GIỖ & THỐNG KÊ CÁC ĐỜI) -->
+    <div id="memorialViewport" class="hidden flex-1 overflow-auto bg-[#fdfbf7] p-4 sm:p-6">
+      <div class="max-w-7xl mx-auto space-y-6 pb-8">
+        <!-- Banner tiêu đề -->
+        <div class="bg-gradient-to-r from-[#631212] via-[#7c1515] to-[#631212] text-[#fff8e7] rounded-2xl p-4 sm:p-5 border-2 border-[#c59b27] shadow-md flex flex-wrap items-center justify-between gap-4">
+          <div class="space-y-1 max-w-2xl">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-[#c59b27] text-[#231914] font-bold text-[11px]">PHỤNG SỰ TỔ TIÊN &amp; RÀ SOÁT PHẢ HỆ</span>
+              <span class="text-xs text-[#f4e7be]">Họ Hà • Thôn Cao Bạt Nang</span>
+            </div>
+            <h2 class="font-serif-trad text-lg sm:text-xl font-bold tracking-wide">
+              Sổ Ngày Giỗ Âm Lịch &amp; Thống Kê Các Đời
+            </h2>
+            <p class="text-xs text-[#f3dfc1] leading-relaxed">
+              Tra cứu ngày giỗ theo từng tháng Âm lịch phục vụ lễ cúng/giỗ Tổ, đồng thời thống kê nhân khẩu từng đời và rà soát các hồ sơ còn khuyết ngày giỗ, mộ phần hoặc năm sinh – mất.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <button onclick="printSection('memorial')" class="px-3.5 py-2 rounded-xl bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold text-xs shadow flex items-center gap-1.5 transition">
+              <span>🖨️</span><span>In Sổ Giỗ &amp; Thống Kê</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PHẦN 1: THỐNG KÊ TỔNG QUAN & TỪNG ĐỜI -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h3 class="font-serif-trad text-base sm:text-lg font-bold text-[#631212]">📊 Thống Kê Nhân Đinh Theo Đời &amp; Mức Độ Hoàn Thiện Hồ Sơ</h3>
+            <span id="completenessSummaryBadge" class="text-xs font-semibold px-3 py-1 rounded-full bg-[#f5efe2] border border-[#d8c7a8] text-[#631212]"></span>
+          </div>
+
+          <div id="kpiSummaryCards" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+          <div class="bg-white rounded-2xl border border-[#dfd2ba] shadow-sm overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-[#631212] text-[#fff8e7]">
+                  <th class="py-2.5 px-3 font-semibold">Đời thứ</th>
+                  <th class="py-2.5 px-3 font-semibold">Số thành viên</th>
+                  <th class="py-2.5 px-3 font-semibold">Tỷ trọng</th>
+                  <th class="py-2.5 px-3 font-semibold">Có ngày giỗ ÂL</th>
+                  <th class="py-2.5 px-3 font-semibold">Có nơi an táng</th>
+                  <th class="py-2.5 px-3 font-semibold">Khuyết tên / 0 con</th>
+                  <th class="py-2.5 px-3 font-semibold text-right">Lọc trên sơ đồ</th>
+                </tr>
+              </thead>
+              <tbody id="generationStatsBody" class="divide-y divide-[#efe6d5]"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PHẦN 2: SỔ NGÀY GIỖ ÂM LỊCH -->
+        <section class="space-y-3 pt-2 border-t border-[#e5d8c1]">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="font-serif-trad text-base sm:text-lg font-bold text-[#631212]">🕯️ Sổ Ngày Giỗ Âm Lịch Dòng Họ</h3>
+              <p class="text-xs text-[#6e5d52]">Lọc theo tháng Âm lịch hoặc tìm tên cụ/ông/bà để chuẩn bị lễ cúng và giỗ chạp.</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <select id="memorialMonthFilter" onchange="renderMemorialAndStats()" class="px-3 py-1.5 rounded-lg border border-[#cbb796] bg-white text-xs font-semibold">
+                <option value="ALL">Tất cả các tháng Âm lịch</option>
+                <option value="1">Tháng Giêng (Tháng 1 ÂL)</option>
+                <option value="2">Tháng 2 ÂL</option>
+                <option value="3">Tháng 3 ÂL (Thanh minh)</option>
+                <option value="4">Tháng 4 ÂL</option>
+                <option value="5">Tháng 5 ÂL</option>
+                <option value="6">Tháng 6 ÂL</option>
+                <option value="7">Tháng 7 ÂL (Vu lan)</option>
+                <option value="8">Tháng 8 ÂL</option>
+                <option value="9">Tháng 9 ÂL</option>
+                <option value="10">Tháng 10 ÂL</option>
+                <option value="11">Tháng 11 ÂL</option>
+                <option value="12">Tháng Chạp (Tháng 12 ÂL)</option>
+                <option value="MISSING">Chưa cập nhật ngày giỗ</option>
+              </select>
+              <input id="memorialSearchInput" type="text" oninput="renderMemorialAndStats()" placeholder="Tìm tên người, ngày giỗ, nơi an táng..." class="px-3 py-1.5 rounded-lg border border-[#cbb796] bg-white text-xs w-56" />
+            </div>
+          </div>
+
+          <div id="memorialListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </section>
+
+        <!-- PHẦN 3: DANH SÁCH RÀ SOÁT THÔNG TIN CÒN KHUYẾT -->
+        <section class="space-y-3 pt-2 border-t border-[#e5d8c1]">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="font-serif-trad text-base sm:text-lg font-bold text-[#631212]">📋 Rà Soát Hồ Sơ Cần Bổ Sung Thông Tin</h3>
+              <p class="text-xs text-[#6e5d52]">Các mục khuyết tên, chưa ghi ngày giỗ Âm lịch hoặc chưa ghi nơi an táng để ban biên tập điền dần.</p>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs">
+              <button onclick="setAuditFilter('ALL')" id="auditBtnAll" class="px-2.5 py-1 rounded-lg bg-[#8b1e1e] text-white font-semibold">Tất cả cần bổ sung</button>
+              <button onclick="setAuditFilter('no_lunar')" id="auditBtnNoLunar" class="px-2.5 py-1 rounded-lg bg-white border border-[#cbb796] font-medium">Thiếu ngày giỗ</button>
+              <button onclick="setAuditFilter('no_burial')" id="auditBtnNoBurial" class="px-2.5 py-1 rounded-lg bg-white border border-[#cbb796] font-medium">Thiếu mộ phần</button>
+              <button onclick="setAuditFilter('missing_name')" id="auditBtnMissingName" class="px-2.5 py-1 rounded-lg bg-white border border-[#cbb796] font-medium">Khuyết tên</button>
+            </div>
+          </div>
+
+          <div id="auditListContainer" class="bg-white rounded-2xl border border-[#dfd2ba] divide-y divide-[#efe6d5] shadow-sm"></div>
+        </section>
       </div>
     </div>
 
@@ -749,7 +952,68 @@
     </div>
   </div>
 
+
+  <!-- MODAL: TÙY CHỌN IN / XUẤT PDF TRANG ĐẸP -->
+  <div id="printOptionsModal" onclick="if(event.target===this) closePrintModal()" class="fixed inset-0 bg-black/60 backdrop-blur-[1px] z-50 hidden items-center justify-center p-3">
+    <div class="bg-[#fdfbf7] border-2 border-[#c59b27] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="bg-[#631212] text-[#fff8e7] px-5 py-3.5 flex items-center justify-between">
+        <h3 class="font-serif-trad font-bold text-base">🖨️ In Ấn &amp; Xuất Trang Gia Phả Đẹp (PDF)</h3>
+        <button onclick="closePrintModal()" class="text-[#f4e7be] hover:text-white text-xl leading-none">✕</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <p class="text-[#6e5d52] leading-relaxed">
+          Chọn mẫu trang trình bày trang trọng dành cho in giấy hoặc lưu PDF (tự động ẩn thanh thao tác, giữ khung viền dòng họ và thông tin biên soạn):
+        </p>
+
+        <div class="space-y-2.5">
+          <label class="flex items-start gap-2.5 p-3 rounded-xl border border-[#d8c7a8] bg-white hover:bg-[#f5efe2] cursor-pointer">
+            <input type="radio" name="printMode" value="member" checked class="mt-0.5 accent-[#8b1e1e]" />
+            <div>
+              <div class="font-bold text-[#631212]">1. Hồ sơ chi tiết cá nhân &amp; nhánh liên quan</div>
+              <div class="text-[11px] text-[#6e5d52]">In trang tiểu sử, đường dẫn tổ tiên, thông tin giỗ/mộ phần và danh sách con cháu của người đang chọn (mặc định: <span id="printTargetMemberName" class="font-semibold text-[#231914]">Hà Quý Công</span>).</div>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 p-3 rounded-xl border border-[#d8c7a8] bg-white hover:bg-[#f5efe2] cursor-pointer">
+            <input type="radio" name="printMode" value="branch" class="mt-0.5 accent-[#8b1e1e]" />
+            <div>
+              <div class="font-bold text-[#631212]">2. Cây phả hệ &amp; danh sách theo nhánh cụ thể</div>
+              <div class="text-[11px] text-[#6e5d52] mb-1.5">In phả hệ của một nhánh/chi cụ thể để phát cho các hộ trong nhánh:</div>
+              <select id="printBranchSelect" class="w-full px-2.5 py-1.5 rounded-lg border border-[#cbb796] bg-[#fdfbf7] text-xs font-semibold"></select>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 p-3 rounded-xl border border-[#d8c7a8] bg-white hover:bg-[#f5efe2] cursor-pointer">
+            <input type="radio" name="printMode" value="list" class="mt-0.5 accent-[#8b1e1e]" />
+            <div>
+              <div class="font-bold text-[#631212]">3. Danh sách toàn bộ thành viên theo đời</div>
+              <div class="text-[11px] text-[#6e5d52]">In bảng danh sách phân tầng từ Đời 1 đến đời mới nhất để dán bảng tin hoặc đối chiếu.</div>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 p-3 rounded-xl border border-[#d8c7a8] bg-white hover:bg-[#f5efe2] cursor-pointer">
+            <input type="radio" name="printMode" value="memorial" class="mt-0.5 accent-[#8b1e1e]" />
+            <div>
+              <div class="font-bold text-[#631212]">4. Sổ ngày giỗ Âm lịch &amp; thống kê các đời</div>
+              <div class="text-[11px] text-[#6e5d52]">In danh mục ngày giỗ theo tháng Âm lịch và bảng thống kê các đời phục vụ ban lễ / giỗ Tổ.</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-[#e5d8c1]">
+          <button type="button" onclick="closePrintModal()" class="px-4 py-2 rounded-lg border border-[#cbb796] bg-white font-semibold">Hủy</button>
+          <button type="button" onclick="executePrintFromModal()" class="px-5 py-2 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-bold shadow flex items-center gap-1.5">
+            <span>🖨️</span><span>Xem trước &amp; In / Lưu PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  </div>
+
+  <!-- KHU VỰC TRANG IN ĐẸP (CHỈ HIỂN THỊ KHI IN / XUẤT PDF) -->
+  <div id="printSheetView"></div>
 
   <script>
     // =========================================================================
@@ -1484,18 +1748,30 @@
       }
 
       function getSubtreeWidth(node) {
-        const kids = (childrenMap.get(node.id) || []).filter(c => !collapsedIds.has(node.id) && genFilter === 'ALL');
+        const kids = (childrenMap.get(node.id) || []).filter(c =>
+          !collapsedIds.has(node.id) &&
+          genFilter === 'ALL' &&
+          (!allowedBranchSet || allowedBranchSet.has(c.id))
+        );
         if (kids.length === 0) return NODE_W;
         const kidsWidth = kids.reduce((sum, k) => sum + getSubtreeWidth(k), 0) + (kids.length - 1) * GAP_X;
         return Math.max(NODE_W, kidsWidth);
       }
 
       let cursorX = 30;
-      const roots = members.filter(m => !m.parentId);
+      let roots = members.filter(m => !m.parentId);
+      let allowedBranchSet = null;
+      if (focusedBranchRootId) {
+        const focusedRoot = members.find(m => m.id === focusedBranchRootId);
+        if (focusedRoot) {
+          allowedBranchSet = getSubtreeIdSet(focusedRoot.id);
+          roots = [focusedRoot];
+        }
+      }
 
       function layoutNode(node, xLeft, depth) {
         const kids = (genFilter === 'ALL' && !collapsedIds.has(node.id))
-          ? (childrenMap.get(node.id) || [])
+          ? (childrenMap.get(node.id) || []).filter(c => !allowedBranchSet || allowedBranchSet.has(c.id))
           : [];
 
         const totalW = getSubtreeWidth(node);
@@ -1776,6 +2052,7 @@
       selectedMemberId = id;
       const m = members.find(x => x.id === id);
       if (!m) return;
+      renderBranchBreadcrumb(m.id);
       renderTree();
       renderDetailDrawer(m);
     }
@@ -1783,6 +2060,7 @@
     function closeDetailDrawer() {
       selectedMemberId = null;
       document.getElementById('detailDrawer').classList.add('hidden');
+      renderBranchBreadcrumb();
       renderTree();
     }
 
@@ -1815,6 +2093,7 @@
         <div class="flex flex-wrap gap-1.5">
           <button onclick="openAddModal('${m.id}')" class="px-3 py-1.5 rounded-lg bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold">+ Thêm con</button>
           <button onclick="openEditModal('${m.id}')" class="px-3 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold">Sửa hồ sơ</button>
+          <button onclick="printSection('member')" class="px-2.5 py-1.5 rounded-lg bg-[#f5efe2] hover:bg-[#e7dcc7] border border-[#cbb796] text-[#631212] font-semibold">🖨️ In hồ sơ</button>
           <button onclick="deleteMember('${m.id}')" class="px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 font-semibold">Xóa</button>
         </div>
 
@@ -2189,15 +2468,18 @@
       const isTree = view === 'tree';
       const isTable = view === 'table';
       const isArchive = view === 'archive';
+      const isMemorial = view === 'memorial';
 
       document.getElementById('treeViewport').classList.toggle('hidden', !isTree);
       document.getElementById('treeToolbar').classList.toggle('hidden', !isTree);
       document.getElementById('tableViewport').classList.toggle('hidden', !isTable);
       document.getElementById('archiveViewport').classList.toggle('hidden', !isArchive);
+      document.getElementById('memorialViewport').classList.toggle('hidden', !isMemorial);
 
       const btnTree = document.getElementById('btnViewTree');
       const btnTable = document.getElementById('btnViewTable');
       const btnArchive = document.getElementById('btnViewArchive');
+      const btnMemorial = document.getElementById('btnViewMemorial');
 
       const activeClass = 'px-2.5 py-1.5 rounded-md font-semibold bg-[#c59b27] text-[#231914] transition flex items-center gap-1';
       const inactiveClass = 'px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition flex items-center gap-1';
@@ -2205,10 +2487,12 @@
       btnTree.className = isTree ? activeClass : inactiveClass;
       btnTable.className = isTable ? activeClass : inactiveClass;
       btnArchive.className = isArchive ? activeClass : inactiveClass;
+      if (btnMemorial) btnMemorial.className = isMemorial ? activeClass : inactiveClass;
 
       if (isTree) renderTree();
       else if (isTable) renderTable();
       else if (isArchive) renderArchiveGallery();
+      else if (isMemorial) renderMemorialAndStats();
     }
 
     // =========================================================================
@@ -2794,9 +3078,12 @@
     function renderAll() {
       updateStats();
       updateUndoButton();
+      populateBranchFocusSelect();
+      renderBranchBreadcrumb();
       renderTree();
       if (currentView === 'table') renderTable();
       if (currentView === 'archive') renderArchiveGallery();
+      if (currentView === 'memorial') renderMemorialAndStats();
     }
 
     // =========================================================================
@@ -2906,6 +3193,614 @@
       setTimeout(() => {
         fitTreeToScreen();
       }, 60);
+    }
+
+
+    // =========================================================================
+    // 12. THANH ĐƯỜNG DẪN NHÁNH (BREADCRUMB) & CHẾ ĐỘ TẬP TRUNG 1 NHÁNH
+    // =========================================================================
+    let focusedBranchRootId = '';
+    let auditFilterMode = 'ALL';
+
+    function getAncestorChain(memberId) {
+      const chain = [];
+      const visited = new Set();
+      let curr = members.find(m => m.id === memberId);
+      while (curr && !visited.has(curr.id)) {
+        visited.add(curr.id);
+        chain.unshift(curr);
+        curr = curr.parentId ? members.find(x => x.id === curr.parentId) : null;
+      }
+      return chain;
+    }
+
+    function getSubtreeIdSet(rootId) {
+      const set = new Set();
+      if (!rootId) return set;
+      const root = members.find(m => m.id === rootId);
+      if (!root) return set;
+      set.add(root.id);
+      for (const d of getDescendants(root.id)) {
+        set.add(d.id);
+      }
+      return set;
+    }
+
+    function populateBranchFocusSelect() {
+      const sel = document.getElementById('branchFocusSelect');
+      if (!sel) return;
+      const candidates = [...members]
+        .filter(m => m.generation >= 2 && m.generation <= 6 && getChildren(m.id).length > 0)
+        .sort((a, b) => a.generation - b.generation || a.name.localeCompare(b.name, 'vi'));
+
+      let html = `<option value="">Toàn bộ dòng họ (${members.length} người)</option>`;
+      for (const m of candidates) {
+        const descCount = getDescendants(m.id).length;
+        const label = `Đời ${m.generation} — ${m.name}${m.birthOrder ? ` (${m.birthOrder})` : ''} • ${descCount} hậu duệ`;
+        html += `<option value="${m.id}" ${m.id === focusedBranchRootId ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+      }
+      sel.innerHTML = html;
+
+      const clearBtn = document.getElementById('btnClearBranchFocus');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !focusedBranchRootId);
+
+      const banner = document.getElementById('branchFocusBanner');
+      const bannerLabel = document.getElementById('branchFocusLabel');
+      if (banner && bannerLabel) {
+        if (focusedBranchRootId) {
+          const rootObj = members.find(x => x.id === focusedBranchRootId);
+          banner.classList.remove('hidden');
+          bannerLabel.textContent = rootObj
+            ? `Nhánh ${rootObj.name} (Đời ${rootObj.generation}) • ${getSubtreeIdSet(rootObj.id).size} thành viên`
+            : 'Đang lọc theo nhánh';
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+    }
+
+    function setFocusedBranch(rootId) {
+      focusedBranchRootId = rootId || '';
+      if (focusedBranchRootId) {
+        let curr = members.find(m => m.id === focusedBranchRootId);
+        while (curr && curr.parentId) {
+          collapsedIds.delete(curr.parentId);
+          curr = members.find(x => x.id === curr.parentId);
+        }
+        collapsedIds.delete(focusedBranchRootId);
+      }
+      populateBranchFocusSelect();
+      renderTree();
+      if (currentView === 'table') renderTable();
+      if (focusedBranchRootId) {
+        setTimeout(() => focusNodeById(focusedBranchRootId), 40);
+      } else {
+        setTimeout(() => fitTreeToScreen(), 40);
+      }
+    }
+
+    function clearBranchFocus() {
+      setFocusedBranch('');
+    }
+
+    function renderBranchBreadcrumb(targetMemberId = null) {
+      const trailEl = document.getElementById('breadcrumbTrail');
+      const actionsEl = document.getElementById('breadcrumbActions');
+      if (!trailEl || !actionsEl) return;
+
+      const focusId = targetMemberId || selectedMemberId || focusedBranchRootId || 'g1_thuy_to';
+      const chain = getAncestorChain(focusId);
+
+      if (!chain.length) {
+        trailEl.innerHTML = `<span class="font-bold text-[#631212]">📍 Đường dẫn nhánh:</span> <span class="text-[#6e5d52]">Chưa có dữ liệu</span>`;
+        actionsEl.innerHTML = '';
+        return;
+      }
+
+      const crumbsHtml = chain.map((node, idx) => {
+        const isLast = idx === chain.length - 1;
+        const sep = idx > 0 ? `<span class="text-[#8b1e1e] font-bold mx-0.5">›</span>` : '';
+        return `${sep}<button onclick="focusNodeById('${node.id}'); selectMember('${node.id}');" class="px-2 py-0.5 rounded-md transition ${isLast ? 'bg-[#8b1e1e] text-[#fff8e7] font-bold shadow-xs' : 'bg-white hover:bg-[#efe6d5] border border-[#cbb796] text-[#231914] font-medium'}">${escapeHtml(node.name)} <span class="opacity-75 text-[10px]">(Đ${node.generation})</span></button>`;
+      }).join('');
+
+      trailEl.innerHTML = `<span class="font-bold text-[#631212] shrink-0">📍 Đường dẫn nhánh:</span>${crumbsHtml}`;
+
+      const branchCandidate = chain.find(n => n.generation >= 2 && getChildren(n.id).length > 0) || chain[chain.length - 1];
+      if (branchCandidate && branchCandidate.id !== 'g1_thuy_to') {
+        const isAlreadyFocused = focusedBranchRootId === branchCandidate.id;
+        actionsEl.innerHTML = isAlreadyFocused
+          ? `<button onclick="clearBranchFocus()" class="px-2 py-0.5 rounded bg-[#490b0b] text-[#f4e7be] font-semibold">✕ Thoát xem 1 nhánh</button>`
+          : `<button onclick="setFocusedBranch('${branchCandidate.id}')" class="px-2 py-0.5 rounded bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold">🌿 Tập trung nhánh ${escapeHtml(branchCandidate.name)}</button>`;
+      } else {
+        actionsEl.innerHTML = '';
+      }
+    }
+
+    // =========================================================================
+    // 13. SỔ NGÀY GIỖ ÂM LỊCH, THỐNG KÊ CÁC ĐỜI & RÀ SOÁT HỒ SƠ
+    // =========================================================================
+    function extractLunarMonth(lunarStr) {
+      if (!lunarStr) return null;
+      const s = String(lunarStr).toLowerCase().trim();
+      if (s.includes('giêng')) return 1;
+      if (s.includes('chạp')) return 12;
+      const m1 = s.match(/(?:tháng|t)\s*0?(\d{1,2})/i);
+      if (m1) {
+        const mo = Number(m1[1]);
+        if (mo >= 1 && mo <= 12) return mo;
+      }
+      const m2 = s.match(/\/\s*0?(\d{1,2})/);
+      if (m2) {
+        const mo = Number(m2[1]);
+        if (mo >= 1 && mo <= 12) return mo;
+      }
+      return null;
+    }
+
+    function setAuditFilter(mode) {
+      auditFilterMode = mode;
+      const map = {
+        ALL: 'auditBtnAll',
+        no_lunar: 'auditBtnNoLunar',
+        no_burial: 'auditBtnNoBurial',
+        missing_name: 'auditBtnMissingName'
+      };
+      Object.entries(map).forEach(([k, id]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = (k === mode)
+          ? 'px-2.5 py-1 rounded-lg bg-[#8b1e1e] text-white font-semibold'
+          : 'px-2.5 py-1 rounded-lg bg-white border border-[#cbb796] font-medium';
+      });
+      renderMemorialAndStats();
+    }
+
+    function renderMemorialAndStats() {
+      const total = members.length;
+      const maxGen = members.reduce((mx, m) => Math.max(mx, Number(m.generation) || 1), 0);
+      const withLunar = members.filter(m => Boolean((m.lunarDeathDate || '').trim())).length;
+      const withBurial = members.filter(m => Boolean((m.burialPlace || '').trim())).length;
+      const missingNameCount = members.filter(m => m.status === 'missing' || !m.name || m.name.includes('Khuyết')).length;
+
+      const compBadge = document.getElementById('completenessSummaryBadge');
+      if (compBadge) {
+        compBadge.textContent = `Đã ghi ngày giỗ: ${withLunar}/${total} • Nơi an táng: ${withBurial}/${total} • Khuyết tên: ${missingNameCount}`;
+      }
+
+      const kpiContainer = document.getElementById('kpiSummaryCards');
+      if (kpiContainer) {
+        kpiContainer.innerHTML = `
+          <div class="bg-white rounded-xl border border-[#dfd2ba] p-3.5 shadow-xs">
+            <div class="text-[11px] text-[#6e5d52] font-medium">Tổng số thành viên</div>
+            <div class="font-serif-trad text-xl font-bold text-[#631212] mt-0.5">${total} <span class="text-xs font-sans font-semibold text-[#6e5d52]">(${maxGen} đời)</span></div>
+          </div>
+          <div class="bg-white rounded-xl border border-[#dfd2ba] p-3.5 shadow-xs">
+            <div class="text-[11px] text-[#6e5d52] font-medium">Đã có ngày giỗ ÂL</div>
+            <div class="font-serif-trad text-xl font-bold text-[#631212] mt-0.5">${withLunar} <span class="text-xs font-sans font-semibold text-[#6e5d52]">/ ${total} người</span></div>
+          </div>
+          <div class="bg-white rounded-xl border border-[#dfd2ba] p-3.5 shadow-xs">
+            <div class="text-[11px] text-[#6e5d52] font-medium">Đã ghi nơi an táng</div>
+            <div class="font-serif-trad text-xl font-bold text-[#631212] mt-0.5">${withBurial} <span class="text-xs font-sans font-semibold text-[#6e5d52]">/ ${total} người</span></div>
+          </div>
+          <div class="bg-white rounded-xl border border-[#dfd2ba] p-3.5 shadow-xs">
+            <div class="text-[11px] text-[#6e5d52] font-medium">Mục khuyết tên / 0 con</div>
+            <div class="font-serif-trad text-xl font-bold text-[#8b1e1e] mt-0.5">${missingNameCount} <span class="text-xs font-sans font-semibold text-[#6e5d52]">hồ sơ</span></div>
+          </div>
+        `;
+      }
+
+      // Bảng thống kê từng đời
+      const statsBody = document.getElementById('generationStatsBody');
+      if (statsBody) {
+        let rowsHtml = '';
+        for (let g = 1; g <= Math.max(8, maxGen); g++) {
+          const listG = members.filter(m => Number(m.generation) === g);
+          if (listG.length === 0 && g > maxGen) continue;
+          const pct = total > 0 ? Math.round((listG.length / total) * 100) : 0;
+          const gLunar = listG.filter(m => Boolean((m.lunarDeathDate || '').trim())).length;
+          const gBurial = listG.filter(m => Boolean((m.burialPlace || '').trim())).length;
+          const gSpecial = listG.filter(m => m.status === 'missing' || m.status === 'no_issue' || (m.name || '').includes('Khuyết')).length;
+          const roleNote = g === 1 ? ' (Đức Thủy Tổ)' : (g === 2 ? ' (Đức Tiền Tổ)' : '');
+
+          rowsHtml += `
+            <tr class="hover:bg-[#f5efe2]/60">
+              <td class="py-2 px-3 font-bold text-[#631212]">Đời ${g}<span class="font-normal text-[#6e5d52]">${roleNote}</span></td>
+              <td class="py-2 px-3 font-semibold">${listG.length}</td>
+              <td class="py-2 px-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-24 h-2 rounded-full bg-[#efe6d5] overflow-hidden">
+                    <div class="h-full bg-[#8b1e1e]" style="width:${pct}%"></div>
+                  </div>
+                  <span class="text-[11px] text-[#6e5d52]">${pct}%</span>
+                </div>
+              </td>
+              <td class="py-2 px-3">${gLunar}/${listG.length}</td>
+              <td class="py-2 px-3">${gBurial}/${listG.length}</td>
+              <td class="py-2 px-3">${gSpecial > 0 ? `<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold">${gSpecial}</span>` : '<span class="text-[#6e5d52]">0</span>'}</td>
+              <td class="py-2 px-3 text-right">
+                <button onclick="switchView('tree'); applyGenFilter('${g}'); document.getElementById('genFilter').value='${g}';" class="px-2.5 py-1 rounded bg-[#f5efe2] hover:bg-[#e7dcc7] text-[#631212] font-semibold text-[11px]">
+                  Xem Đời ${g}
+                </button>
+              </td>
+            </tr>
+          `;
+        }
+        statsBody.innerHTML = rowsHtml;
+      }
+
+      // Sổ ngày giỗ Âm lịch
+      const monthFilter = document.getElementById('memorialMonthFilter')?.value || 'ALL';
+      const mQuery = (document.getElementById('memorialSearchInput')?.value || '').trim().toLowerCase();
+      const memorialContainer = document.getElementById('memorialListContainer');
+
+      if (memorialContainer) {
+        const withLunarList = members.filter(m => Boolean((m.lunarDeathDate || '').trim()));
+        const filteredMemorials = withLunarList
+          .filter(m => {
+            const mo = extractLunarMonth(m.lunarDeathDate);
+            if (monthFilter === 'MISSING') return false;
+            if (monthFilter !== 'ALL' && String(mo) !== String(monthFilter)) return false;
+            if (!mQuery) return true;
+            return (
+              (m.name || '').toLowerCase().includes(mQuery) ||
+              (m.courtesyName || '').toLowerCase().includes(mQuery) ||
+              (m.lunarDeathDate || '').toLowerCase().includes(mQuery) ||
+              (m.burialPlace || '').toLowerCase().includes(mQuery)
+            );
+          })
+          .sort((a, b) => {
+            const ma = extractLunarMonth(a.lunarDeathDate) ?? 99;
+            const mb = extractLunarMonth(b.lunarDeathDate) ?? 99;
+            return ma - mb || a.generation - b.generation || a.name.localeCompare(b.name, 'vi');
+          });
+
+        if (filteredMemorials.length === 0) {
+          memorialContainer.innerHTML = `
+            <div class="col-span-full bg-white rounded-2xl border border-dashed border-[#cbb796] p-6 text-center space-y-2">
+              <div class="font-serif-trad font-bold text-sm text-[#631212]">Chưa có ngày giỗ nào khớp bộ lọc hiện tại</div>
+              <p class="text-xs text-[#6e5d52]">Bạn có thể mở hồ sơ bất kỳ thành viên nào và bấm <strong>"Sửa hồ sơ"</strong> để điền mục <strong>Ngày giỗ Âm lịch</strong> (VD: 12/07 ÂL hoặc Tháng Chạp).</p>
+            </div>
+          `;
+        } else {
+          memorialContainer.innerHTML = filteredMemorials.map(m => {
+            const parent = m.parentId ? members.find(x => x.id === m.parentId) : null;
+            return `
+              <div class="bg-white rounded-xl border border-[#dfd2ba] p-3.5 shadow-xs hover:shadow-sm transition flex flex-col justify-between gap-2">
+                <div>
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="px-2 py-0.5 rounded-full bg-[#8b1e1e] text-[#fff8e7] font-bold text-[11px]">🕯️ ${escapeHtml(m.lunarDeathDate)}</span>
+                    <span class="text-[11px] font-semibold text-[#6e5d52]">Đời ${m.generation}</span>
+                  </div>
+                  <h4 class="font-serif-trad font-bold text-sm text-[#231914] mt-1.5">${escapeHtml(m.name)}</h4>
+                  ${m.courtesyName ? `<div class="text-[11px] italic text-[#6e5d52]">${escapeHtml(m.courtesyName)}</div>` : ''}
+                  <div class="text-[11px] text-[#6e5d52] mt-1 space-y-0.5">
+                    <div>Nhánh: ${parent ? escapeHtml(parent.name) : 'Thủy Tổ'}</div>
+                    ${m.burialPlace ? `<div>📍 An táng: ${escapeHtml(m.burialPlace)}</div>` : ''}
+                  </div>
+                </div>
+                <div class="pt-2 border-t border-[#efe6d5] flex items-center justify-between text-[11px]">
+                  <button onclick="selectMember('${m.id}')" class="text-[#8b1e1e] font-semibold hover:underline">Xem hồ sơ</button>
+                  <button onclick="openEditModal('${m.id}')" class="px-2 py-0.5 rounded bg-[#f5efe2] hover:bg-[#e7dcc7] font-semibold text-[#231914]">Sửa ngày giỗ</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Danh sách rà soát thông tin còn khuyết
+      const auditContainer = document.getElementById('auditListContainer');
+      if (auditContainer) {
+        const auditItems = members
+          .map(m => {
+            const missingFlags = [];
+            if (m.status === 'missing' || !m.name || m.name.includes('Khuyết')) missingFlags.push('missing_name');
+            if (!(m.lunarDeathDate || '').trim()) missingFlags.push('no_lunar');
+            if (!(m.burialPlace || '').trim()) missingFlags.push('no_burial');
+            return { member: m, missingFlags };
+          })
+          .filter(item => {
+            if (item.missingFlags.length === 0) return false;
+            if (auditFilterMode === 'ALL') return true;
+            return item.missingFlags.includes(auditFilterMode);
+          })
+          .sort((a, b) => a.member.generation - b.member.generation || a.member.name.localeCompare(b.member.name, 'vi'));
+
+        const flagLabels = {
+          missing_name: 'Khuyết tên',
+          no_lunar: 'Chưa có ngày giỗ',
+          no_burial: 'Chưa có nơi an táng'
+        };
+
+        if (auditItems.length === 0) {
+          auditContainer.innerHTML = `<div class="p-5 text-center text-xs text-[#6e5d52]">Không có mục nào cần bổ sung theo bộ lọc này.</div>`;
+        } else {
+          auditContainer.innerHTML = auditItems.slice(0, 60).map(({ member: m, missingFlags }) => `
+            <div class="px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap text-xs hover:bg-[#f5efe2]/50">
+              <div class="min-w-0">
+                <span class="font-bold text-[#631212]">Đời ${m.generation}</span>
+                <span class="mx-1.5 text-[#cbb796]">•</span>
+                <span class="font-semibold text-[#231914]">${escapeHtml(m.name)}</span>
+                <span class="ml-2 inline-flex flex-wrap gap-1">
+                  ${missingFlags.map(f => `<span class="px-2 py-0.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-semibold">${flagLabels[f]}</span>`).join('')}
+                </span>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="selectMember('${m.id}')" class="px-2 py-1 rounded bg-[#f5efe2] hover:bg-[#e7dcc7] font-semibold text-[11px]">Xem</button>
+                <button onclick="openEditModal('${m.id}')" class="px-2.5 py-1 rounded bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold text-[11px]">Cập nhật</button>
+              </div>
+            </div>
+          `).join('') + (auditItems.length > 60 ? `<div class="px-4 py-2 text-[11px] text-[#6e5d52] bg-[#fdfbf7]">Đang hiển thị 60/${auditItems.length} hồ sơ cần bổ sung (dùng bộ lọc để thu hẹp).</div>` : '');
+        }
+      }
+    }
+
+    // =========================================================================
+    // 14. IN ẤN / XUẤT TRANG GIA PHẢ ĐẸP (PDF / MÁY IN)
+    // =========================================================================
+    function openPrintModal() {
+      const targetId = selectedMemberId || focusedBranchRootId || 'g1_thuy_to';
+      const targetMember = members.find(m => m.id === targetId) || members[0];
+      const nameSpan = document.getElementById('printTargetMemberName');
+      if (nameSpan && targetMember) {
+        nameSpan.textContent = `${targetMember.name} (Đời ${targetMember.generation})`;
+      }
+
+      const branchSel = document.getElementById('printBranchSelect');
+      if (branchSel) {
+        const candidates = [...members]
+          .filter(m => m.generation >= 1 && m.generation <= 6 && getChildren(m.id).length > 0)
+          .sort((a, b) => a.generation - b.generation || a.name.localeCompare(b.name, 'vi'));
+        const defaultBranch = focusedBranchRootId || (targetMember && getChildren(targetMember.id).length > 0 ? targetMember.id : (targetMember?.parentId || 'g2_ha_quy_ngoc'));
+        branchSel.innerHTML = candidates.map(m =>
+          `<option value="${m.id}" ${m.id === defaultBranch ? 'selected' : ''}>Đời ${m.generation} — ${escapeHtml(m.name)} (${getDescendants(m.id).length} hậu duệ)</option>`
+        ).join('');
+      }
+
+      const modal = document.getElementById('printOptionsModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePrintModal() {
+      const modal = document.getElementById('printOptionsModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function buildPrintHeaderHtml(subTitle) {
+      return `
+        <div style="border-bottom: 2px solid #8b1e1e; padding-bottom: 10px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #8b1e1e; letter-spacing: 0.06em; text-transform: uppercase;">Dòng Họ Hà • Thôn Cao Bạt Nang</div>
+            <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 800; color: #631212; margin: 2px 0 0 0;">SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO BẠT NANG</h1>
+            <div style="font-size: 12px; color: #6e5d52; margin-top: 2px;">${escapeHtml(subTitle)}</div>
+          </div>
+          <div style="text-align: right; font-size: 11px; color: #6e5d52;">
+            <div>Phiên bản v2.0 • 2026</div>
+            <div>Ngày in: ${new Date().toLocaleDateString('vi-VN')}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function buildPrintFooterHtml() {
+      return `
+        <div style="margin-top: 22px; padding-top: 10px; border-top: 1px solid #d8c7a8; display: flex; justify-content: space-between; font-size: 10.5px; color: #6e5d52;">
+          <span>Biên tập: Ông Hà Đăng (Đ6) • Kỹ thuật &amp; Thiết kế: Ông Hà Duy Đông (Đ7)</span>
+          <span>Hội đồng gia tộc Họ Hà – Thôn Cao Bạt Nang</span>
+        </div>
+      `;
+    }
+
+    function buildPrintableHtml(mode, branchRootId = '') {
+      if (mode === 'member') {
+        const targetId = selectedMemberId || 'g1_thuy_to';
+        const m = members.find(x => x.id === targetId) || members[0];
+        if (!m) return '';
+        const chain = getAncestorChain(m.id);
+        const kids = getChildren(m.id);
+        const parent = m.parentId ? members.find(x => x.id === m.parentId) : null;
+
+        return `
+          <div style="border: 2px solid #c59b27; border-radius: 12px; padding: 18px; background: #fffdf9;">
+            ${buildPrintHeaderHtml('Trích Lục Hồ Sơ Cá Nhân & Dòng Dõi')}
+            <div style="background: #f5efe2; border: 1px solid #d8c7a8; border-radius: 8px; padding: 8px 12px; font-size: 11.5px; margin-bottom: 14px;">
+              <strong>Đường dẫn tổ tiên:</strong> ${chain.map(c => `${escapeHtml(c.name)} (Đời ${c.generation})`).join(' → ')}
+            </div>
+            <h2 style="font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 700; color: #631212; margin: 0 0 8px 0;">
+              ${escapeHtml(m.name)} <span style="font-size: 13px; font-weight: 600; color: #6e5d52;">— Đời thứ ${m.generation}</span>
+            </h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px;">
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; background: #fdfbf7; width: 24%;"><strong>Tên húy / Hiệu:</strong></td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; width: 26%;">${escapeHtml(m.courtesyName || '—')}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; background: #fdfbf7; width: 24%;"><strong>Thứ tự / Ghi chú:</strong></td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; width: 26%;">${escapeHtml(m.birthOrder || '—')}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; background: #fdfbf7;"><strong>Cha / Nhánh trên:</strong></td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${parent ? `${escapeHtml(parent.name)} (Đời ${parent.generation})` : 'Đức Thủy Tổ'}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; background: #fdfbf7;"><strong>Vợ / Chồng:</strong></td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${escapeHtml(m.spouse || '—')}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; background: #fdfbf7;"><strong>Năm sinh – mất:</strong></td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${escapeHtml(m.birthYear || '?')} – ${escapeHtml(m.deathYear || '?')}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; background: #fdfbf7;"><strong>Ngày giỗ Âm lịch:</strong></td>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${escapeHtml(m.lunarDeathDate || '—')}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e5d8c1; background: #fdfbf7;"><strong>Nơi an táng:</strong></td>
+                <td colspan="3" style="padding: 6px 8px; border: 1px solid #e5d8c1;">${escapeHtml(m.burialPlace || '—')}</td>
+              </tr>
+            </table>
+            <div style="margin-bottom: 12px; font-size: 12px;">
+              <strong>Tiểu sử &amp; Công trạng:</strong>
+              <div style="margin-top: 4px; padding: 8px 10px; border: 1px solid #e5d8c1; border-radius: 6px; background: #fff;">${escapeHtml(m.bio || 'Chưa có ghi chú tiểu sử.')}</div>
+            </div>
+            <div style="font-size: 12px;">
+              <strong>Danh sách người con (${kids.length}):</strong>
+              ${kids.length === 0
+                ? `<div style="color: #6e5d52; font-style: italic; margin-top: 4px;">Chưa ghi nhận người con nào.</div>`
+                : `<ul style="margin: 6px 0 0 18px; padding: 0;">${kids.map(k => `<li style="margin-bottom: 3px;"><strong>${escapeHtml(k.name)}</strong> (Đời ${k.generation})${k.courtesyName ? ` — <em>${escapeHtml(k.courtesyName)}</em>` : ''}</li>`).join('')}</ul>`
+              }
+            </div>
+            ${buildPrintFooterHtml()}
+          </div>
+        `;
+      }
+
+      if (mode === 'branch') {
+        const rootId = branchRootId || focusedBranchRootId || 'g2_ha_quy_ngoc';
+        const rootObj = members.find(x => x.id === rootId) || members[0];
+        const subtreeIds = getSubtreeIdSet(rootObj.id);
+        const branchList = members
+          .filter(x => subtreeIds.has(x.id))
+          .sort((a, b) => a.generation - b.generation || a.name.localeCompare(b.name, 'vi'));
+
+        return `
+          <div style="border: 2px solid #c59b27; border-radius: 12px; padding: 18px; background: #fffdf9;">
+            ${buildPrintHeaderHtml(`Phả Hệ Nhánh ${rootObj.name} (Từ Đời ${rootObj.generation} • ${branchList.length} thành viên)`)}
+            <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+              <thead>
+                <tr style="background: #631212; color: #fff8e7;">
+                  <th style="padding: 7px 8px; border: 1px solid #631212; text-align: left;">Đời</th>
+                  <th style="padding: 7px 8px; border: 1px solid #631212; text-align: left;">Họ và tên</th>
+                  <th style="padding: 7px 8px; border: 1px solid #631212; text-align: left;">Cha trực tiếp</th>
+                  <th style="padding: 7px 8px; border: 1px solid #631212; text-align: left;">Ngày giỗ ÂL</th>
+                  <th style="padding: 7px 8px; border: 1px solid #631212; text-align: left;">Nơi an táng / Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${branchList.map(item => {
+                  const p = item.parentId ? members.find(x => x.id === item.parentId) : null;
+                  const indent = Math.max(0, (item.generation - rootObj.generation)) * 12;
+                  return `
+                    <tr class="print-avoid-break">
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1; font-weight: 700; color: #631212;">Đời ${item.generation}</td>
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1; padding-left: ${8 + indent}px; font-weight: 600;">${escapeHtml(item.name)}${item.courtesyName ? ` <span style="font-weight:400; color:#6e5d52;">(${escapeHtml(item.courtesyName)})</span>` : ''}</td>
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${p ? escapeHtml(p.name) : '—'}</td>
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${escapeHtml(item.lunarDeathDate || '—')}</td>
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${escapeHtml(item.burialPlace || item.birthOrder || '—')}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+            ${buildPrintFooterHtml()}
+          </div>
+        `;
+      }
+
+      if (mode === 'memorial') {
+        const lunarItems = members
+          .filter(m => Boolean((m.lunarDeathDate || '').trim()))
+          .sort((a, b) => (extractLunarMonth(a.lunarDeathDate) ?? 99) - (extractLunarMonth(b.lunarDeathDate) ?? 99) || a.generation - b.generation);
+
+        const maxGen = members.reduce((mx, m) => Math.max(mx, Number(m.generation) || 1), 0);
+        let genRows = '';
+        for (let g = 1; g <= Math.max(8, maxGen); g++) {
+          const listG = members.filter(m => Number(m.generation) === g);
+          if (listG.length === 0 && g > maxGen) continue;
+          genRows += `<tr>
+            <td style="padding: 5px 8px; border: 1px solid #e5d8c1; font-weight: 700;">Đời ${g}</td>
+            <td style="padding: 5px 8px; border: 1px solid #e5d8c1;">${listG.length} thành viên</td>
+            <td style="padding: 5px 8px; border: 1px solid #e5d8c1;">${listG.filter(x => (x.lunarDeathDate || '').trim()).length} người đã ghi ngày giỗ</td>
+            <td style="padding: 5px 8px; border: 1px solid #e5d8c1;">${listG.filter(x => (x.burialPlace || '').trim()).length} người đã ghi nơi an táng</td>
+          </tr>`;
+        }
+
+        return `
+          <div style="border: 2px solid #c59b27; border-radius: 12px; padding: 18px; background: #fffdf9;">
+            ${buildPrintHeaderHtml('Sổ Ngày Giỗ Âm Lịch & Thống Kê Nhân Đinh Các Đời')}
+            <h3 style="font-size: 14px; font-weight: 700; color: #631212; margin: 0 0 8px 0;">I. Thống kê các đời (${members.length} thành viên)</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 16px;">
+              <thead>
+                <tr style="background: #631212; color: #fff8e7;">
+                  <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Đời</th>
+                  <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Nhân khẩu</th>
+                  <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Ngày giỗ ÂL</th>
+                  <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Nơi an táng</th>
+                </tr>
+              </thead>
+              <tbody>${genRows}</tbody>
+            </table>
+
+            <h3 style="font-size: 14px; font-weight: 700; color: #631212; margin: 0 0 8px 0;">II. Danh sách ngày giỗ Âm lịch (${lunarItems.length} mục đã ghi)</h3>
+            ${lunarItems.length === 0
+              ? `<p style="font-size: 12px; color: #6e5d52;">Chưa có dữ liệu ngày giỗ Âm lịch nào được nhập.</p>`
+              : `<table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                  <thead>
+                    <tr style="background: #631212; color: #fff8e7;">
+                      <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Ngày giỗ ÂL</th>
+                      <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Họ và tên</th>
+                      <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Đời</th>
+                      <th style="padding: 6px 8px; border: 1px solid #631212; text-align: left;">Nơi an táng</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${lunarItems.map(item => `<tr class="print-avoid-break">
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1; font-weight: 700; color: #8b1e1e;">${escapeHtml(item.lunarDeathDate)}</td>
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1; font-weight: 600;">${escapeHtml(item.name)}</td>
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">Đời ${item.generation}</td>
+                      <td style="padding: 6px 8px; border: 1px solid #e5d8c1;">${escapeHtml(item.burialPlace || '—')}</td>
+                    </tr>`).join('')}
+                  </tbody>
+                </table>`
+            }
+            ${buildPrintFooterHtml()}
+          </div>
+        `;
+      }
+
+      // mode === 'list'
+      const sortedAll = [...members].sort((a, b) => a.generation - b.generation || a.name.localeCompare(b.name, 'vi'));
+      return `
+        <div style="border: 2px solid #c59b27; border-radius: 12px; padding: 18px; background: #fffdf9;">
+          ${buildPrintHeaderHtml(`Danh Sách Tổng Hợp Thành Viên (${sortedAll.length} người)`)}
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <thead>
+              <tr style="background: #631212; color: #fff8e7;">
+                <th style="padding: 6px 7px; border: 1px solid #631212; text-align: left;">Đời</th>
+                <th style="padding: 6px 7px; border: 1px solid #631212; text-align: left;">Họ và tên</th>
+                <th style="padding: 6px 7px; border: 1px solid #631212; text-align: left;">Tên húy / Ghi chú</th>
+                <th style="padding: 6px 7px; border: 1px solid #631212; text-align: left;">Cha / Nhánh trên</th>
+                <th style="padding: 6px 7px; border: 1px solid #631212; text-align: left;">Ngày giỗ ÂL</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedAll.map(m => {
+                const p = m.parentId ? members.find(x => x.id === m.parentId) : null;
+                return `<tr class="print-avoid-break">
+                  <td style="padding: 5px 7px; border: 1px solid #e5d8c1; font-weight: 700; color: #631212;">Đời ${m.generation}</td>
+                  <td style="padding: 5px 7px; border: 1px solid #e5d8c1; font-weight: 600;">${escapeHtml(m.name)}</td>
+                  <td style="padding: 5px 7px; border: 1px solid #e5d8c1;">${escapeHtml(m.courtesyName || m.birthOrder || '—')}</td>
+                  <td style="padding: 5px 7px; border: 1px solid #e5d8c1;">${p ? escapeHtml(p.name) : 'Đức Thủy Tổ'}</td>
+                  <td style="padding: 5px 7px; border: 1px solid #e5d8c1;">${escapeHtml(m.lunarDeathDate || '—')}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+          ${buildPrintFooterHtml()}
+        </div>
+      `;
+    }
+
+    function printSection(mode, branchRootId = '') {
+      const sheet = document.getElementById('printSheetView');
+      if (!sheet) return;
+      sheet.innerHTML = buildPrintableHtml(mode, branchRootId);
+      setTimeout(() => {
+        window.print();
+      }, 60);
+    }
+
+    function executePrintFromModal() {
+      const chosen = document.querySelector('input[name="printMode"]:checked')?.value || 'member';
+      const branchId = document.getElementById('printBranchSelect')?.value || '';
+      closePrintModal();
+      printSection(chosen, branchId);
     }
 
     // =========================================================================
