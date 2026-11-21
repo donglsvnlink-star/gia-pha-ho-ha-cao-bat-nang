@@ -365,7 +365,7 @@
           </div>
           <div>
             <label class="block font-semibold text-[#631212] mb-1">Mộ phần / Nơi an táng</label>
-            <input id="mBurial" type="text" placeholder="VD: Nghĩa trang thôn Cao Bất Nang" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+            <input id="mBurial" type="text" placeholder="VD: Nghĩa trang thôn Cao Bạt Nang" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
           </div>
         </div>
 
@@ -455,14 +455,14 @@
 
   <script>
     // =========================================================================
-    // 1. DỮ LIỆU GỐC 8 ĐỜI: SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO BẤT NANG
+    // 1. DỮ LIỆU GỐC 8 ĐỜI: SƠ ĐỒ KÝ PHẢ HỌ HÀ - THÔN CAO Bạt NANG
     // =========================================================================
     const INITIAL_MEMBERS = [
       // ĐỜI 1: THỦY TỔ
-      { id: 'g1_thuy_to', parentId: null, name: 'Hà Quý Công', courtesyName: 'Thủy Tổ Họ Hà', gender: 'male', generation: 1, birthOrder: 'Đời 1 - Thủy Tổ', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: 'Thôn Cao Bất Nang', bio: 'Đức Thủy Tổ họ Hà tại thôn Cao Bất Nang.', avatar: '' },
+      { id: 'g1_thuy_to', parentId: null, name: 'Hà Quý Công', courtesyName: 'Thủy Tổ Họ Hà', gender: 'male', generation: 1, birthOrder: 'Đời 1 - Thủy Tổ', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: 'Thôn Cao Bạt Nang', bio: 'Đức Thủy Tổ họ Hà tại thôn Cao Bạt Nang.', avatar: '' },
 
       // ĐỜI 2: TIỀN TỔ
-      { id: 'g2_ha_quy_ngoc', parentId: 'g1_thuy_to', name: 'Hà Quý Ngọc', courtesyName: 'Tiền Tổ', gender: 'male', generation: 2, birthOrder: 'Đời 2 - Tiền Tổ', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: 'Thôn Cao Bất Nang', bio: 'Tiền Tổ họ Hà, sinh ra các nhánh phát triển về sau.', avatar: '' },
+      { id: 'g2_ha_quy_ngoc', parentId: 'g1_thuy_to', name: 'Hà Quý Ngọc', courtesyName: 'Tiền Tổ', gender: 'male', generation: 2, birthOrder: 'Đời 2 - Tiền Tổ', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: 'Thôn Cao Bạt Nang', bio: 'Tiền Tổ họ Hà, sinh ra các nhánh phát triển về sau.', avatar: '' },
 
       // ĐỜI 3
       { id: 'g3_ha_lanh', parentId: 'g2_ha_quy_ngoc', name: 'Hà Lạnh', courtesyName: '', gender: 'male', generation: 3, birthOrder: 'Nhánh trái', status: 'deceased', birthYear: '', deathYear: '', lunarDeathDate: '', spouse: '', burialPlace: '', bio: 'Con Tiền Tổ Hà Quý Ngọc, thuộc nhánh bên trái.', avatar: '' },
@@ -997,7 +997,7 @@
             </div>
 
             <div class="flex items-center justify-between text-[10px] opacity-80 pt-1 border-t border-current/10">
-              <span class="truncate">${m.spouse ? 'Phối ngẫu: ' + escapeHtml(m.spouse) : (m.birthYear || m.deathYear ? `${m.birthYear || '?'} – ${m.deathYear || ''}` : 'Họ Hà - Cao Bất Nang')}</span>
+              <span class="truncate">${m.spouse ? 'Phối ngẫu: ' + escapeHtml(m.spouse) : (m.birthYear || m.deathYear ? `${m.birthYear || '?'} – ${m.deathYear || ''}` : 'Họ Hà - Cao Bạt Nang')}</span>
               ${hasKids && genFilter === 'ALL'
                 ? `<button onclick="event.stopPropagation(); toggleCollapse('${m.id}')" class="ml-1 px-1.5 rounded bg-black/10 hover:bg-black/20 font-bold">${isCollapsed ? '+' + allKids.length : '−'}</button>`
                 : ''
@@ -1557,7 +1557,7 @@
     }
 
     async function resetToOriginalData() {
-      if (!confirm('Khôi phục toàn bộ sơ đồ về dữ liệu gốc 8 đời của Họ Hà - Thôn Cao Bất Nang?')) return;
+      if (!confirm('Khôi phục toàn bộ sơ đồ về dữ liệu gốc 8 đời của Họ Hà - Thôn Cao Bạt Nang?')) return;
       pushUndoSnapshot();
       const oldIds = members.map(m => m.id);
       members = JSON.parse(JSON.stringify(INITIAL_MEMBERS));
