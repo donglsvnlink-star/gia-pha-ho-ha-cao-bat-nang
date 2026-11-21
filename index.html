@@ -28,6 +28,48 @@
       overflow: hidden;
     }
 
+    @media (max-width: 639px) {
+      body {
+        overflow: auto;
+        height: auto;
+        min-height: 100dvh;
+      }
+      #appContainer {
+        height: auto;
+        min-height: 100dvh;
+        overflow: visible;
+      }
+      #appContainer > header {
+        max-height: 44dvh;
+        overflow-y: auto;
+      }
+      #appContainer > main {
+        min-height: 54dvh;
+        height: 54dvh;
+        flex: 1 0 auto;
+      }
+    }
+
+    body.force-mobile-mode {
+      overflow: auto;
+      height: auto;
+      min-height: 100dvh;
+    }
+    body.force-mobile-mode #appContainer {
+      height: auto;
+      min-height: 100dvh;
+      overflow: visible;
+    }
+    body.force-mobile-mode #appContainer > header {
+      max-height: 44dvh;
+      overflow-y: auto;
+    }
+    body.force-mobile-mode #appContainer > main {
+      min-height: 54dvh;
+      height: 54dvh;
+      flex: 1 0 auto;
+    }
+
     #treeViewport {
       touch-action: none;
     }
@@ -215,7 +257,7 @@
 
   <!-- TOP HEADER -->
   <header class="bg-[#631212] text-[#fdfbf7] border-b-2 border-[#c59b27] shadow-md z-30 shrink-0">
-    <div class="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+    <div class="px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-[#8b1e1e] border border-[#c59b27] flex items-center justify-center shadow-inner shrink-0">
           <span class="font-serif-trad font-bold text-lg text-[#f4e7be]">Hà</span>
@@ -314,7 +356,7 @@
     </div>
 
     <!-- SUB-TOOLBAR: SEARCH, FILTER, ZOOM -->
-    <div id="treeToolbar" class="bg-[#f5efe2] text-[#231914] px-4 py-2 border-t border-[#d8c7a8] flex flex-wrap items-center justify-between gap-2 text-xs">
+    <div id="treeToolbar" class="bg-[#f5efe2] text-[#231914] px-3 sm:px-4 py-1.5 sm:py-2 border-t border-[#d8c7a8] flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 text-xs">
       <div class="flex items-center gap-2 flex-wrap flex-1">
         <div class="relative min-w-[210px] sm:min-w-[260px]">
           <input
@@ -399,6 +441,11 @@
           <span>❖</span><span>Tiền Tổ (Đời 2)</span>
         </button>
       </div>
+
+      <!-- NÚT CĂN SƠ ĐỒ VÀO GIỮA MÀN HÌNH -->
+      <button onclick="document.getElementById('treeViewport').scrollIntoView({ behavior: 'smooth', block: 'center' }); focusNodeById(focusedBranchRootId || selectedMemberId || 'g1_thuy_to');" class="sm:hidden absolute top-3 right-3 z-20 px-2.5 py-1 rounded-full bg-[#c59b27] text-[#231914] shadow text-[11px] font-bold">
+        🎯 Căn giữa
+      </button>
 
       <!-- BANNER CHẾ ĐỘ XEM TẬP TRUNG 1 NHÁNH -->
       <div id="branchFocusBanner" class="hidden branch-focus-banner text-[#fff8e7] px-3.5 py-2 rounded-xl absolute top-12 left-3 sm:left-4 z-20 flex items-center gap-3 text-xs max-w-[92vw]">
@@ -1959,9 +2006,27 @@
 
     function fitTreeToScreen() {
       const viewport = document.getElementById('treeViewport');
-      const { maxX, maxY } = computeLayout();
-      const vw = viewport.clientWidth - 40;
-      const vh = viewport.clientHeight - 40;
+      const { maxX, maxY, positions } = computeLayout();
+      const vw = Math.max(240, viewport.clientWidth - 24);
+      const vh = Math.max(220, viewport.clientHeight - 24);
+      const isNarrow = window.innerWidth < 640 || document.body.classList.contains('force-mobile-mode');
+
+      if (isNarrow) {
+        // Trên điện thoại: ưu tiên căn thẳng vào Thủy Tổ / gốc nhánh để thẻ chữ rõ, dễ kéo xem tiếp
+        const firstRootId = focusedBranchRootId || 'g1_thuy_to';
+        const rootPos = positions.get(firstRootId) || positions.values().next().value;
+        scale = 0.72;
+        if (rootPos) {
+          panX = Math.max(12, viewport.clientWidth / 2 - (rootPos.x + rootPos.w / 2) * scale);
+          panY = 58;
+        } else {
+          panX = 16;
+          panY = 58;
+        }
+        applyTransform();
+        return;
+      }
+
       const nextScale = Math.min(1, Math.max(0.35, Math.min(vw / maxX, vh / maxY)));
       scale = Number(nextScale.toFixed(2));
       panX = 24;
