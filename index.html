@@ -196,6 +196,9 @@
           <button id="btnViewTable" onclick="switchView('table')" class="px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition">
             Danh sách bảng
           </button>
+          <button id="btnViewArchive" onclick="switchView('archive')" class="px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition flex items-center gap-1">
+            <span>🏛️</span><span>Tư liệu &amp; Lăng mộ</span>
+          </button>
         </div>
 
         <button onclick="openAddModal(null)" class="px-3 py-1.5 rounded-lg bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-semibold text-xs flex items-center gap-1 shadow transition">
@@ -362,6 +365,66 @@
             <tbody id="tableBody" class="divide-y divide-[#efe6d5]"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ARCHIVE & TOMB GALLERY VIEW (TƯ LIỆU & LĂNG MỘ TỔ) -->
+    <div id="archiveViewport" class="hidden flex-1 overflow-auto bg-[#fdfbf7] p-4 sm:p-6">
+      <div class="max-w-7xl mx-auto space-y-5">
+        <!-- Banner tiêu đề khu lưu trữ -->
+        <div class="bg-gradient-to-r from-[#631212] via-[#7c1515] to-[#631212] text-[#fff8e7] rounded-2xl p-4 sm:p-5 border-2 border-[#c59b27] shadow-md flex flex-wrap items-center justify-between gap-4">
+          <div class="space-y-1 max-w-2xl">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-[#c59b27] text-[#231914] font-bold text-[11px]">LƯU TRỮ TƯ LIỆU DÒNG HỌ</span>
+              <span class="text-xs text-[#f4e7be]">Thôn Cao Bạt Nang</span>
+            </div>
+            <h2 class="font-serif-trad text-lg sm:text-xl font-bold tracking-wide">
+              Tư Liệu Lăng Mộ Tổ &amp; Con Cháu Bái Yết
+            </h2>
+            <p class="text-xs text-[#f3dfc1] leading-relaxed">
+              Lưu giữ hình ảnh khu lăng mộ Thủy Tổ, Tiền Tổ, nhà thờ họ và các dịp con cháu tập trung tảo mộ, lễ chạp hằng năm. Có thể gắn thẻ thành viên xuất hiện trong ảnh và liên kết trực tiếp về hồ sơ từng đời.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="openPhotoModal(null)" class="px-4 py-2.5 rounded-xl bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold text-xs shadow-md flex items-center gap-1.5 transition">
+              <span>+ Thêm hình ảnh tư liệu</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Thanh lọc theo phân loại & tìm kiếm -->
+        <div class="bg-[#f5efe2] rounded-xl p-3 border border-[#dfd2ba] flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button onclick="setArchiveCategory('ALL')" data-acat="ALL" class="archive-cat-btn px-3 py-1.5 rounded-lg font-semibold bg-[#8b1e1e] text-white transition">
+              Tất cả (<span id="countCatAll">0</span>)
+            </button>
+            <button onclick="setArchiveCategory('tomb')" data-acat="tomb" class="archive-cat-btn px-3 py-1.5 rounded-lg font-medium bg-white hover:bg-[#efe6d5] border border-[#cbb796] transition">
+              🪦 Lăng mộ Tổ
+            </button>
+            <button onclick="setArchiveCategory('descendants')" data-acat="descendants" class="archive-cat-btn px-3 py-1.5 rounded-lg font-medium bg-white hover:bg-[#efe6d5] border border-[#cbb796] transition">
+              👨‍👩‍👧‍👦 Con cháu bái yết
+            </button>
+            <button onclick="setArchiveCategory('shrine')" data-acat="shrine" class="archive-cat-btn px-3 py-1.5 rounded-lg font-medium bg-white hover:bg-[#efe6d5] border border-[#cbb796] transition">
+              🏯 Nhà thờ họ / Lễ chạp
+            </button>
+            <button onclick="setArchiveCategory('document')" data-acat="document" class="archive-cat-btn px-3 py-1.5 rounded-lg font-medium bg-white hover:bg-[#efe6d5] border border-[#cbb796] transition">
+              📜 Bia ký / Sắc phong
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <input
+              id="archiveSearchInput"
+              type="text"
+              oninput="renderArchiveGallery()"
+              placeholder="Tìm tiêu đề ảnh, địa điểm, người trong ảnh..."
+              class="px-3 py-1.5 rounded-lg border border-[#cbb796] bg-white text-xs w-60 focus:outline-none focus:border-[#8b1e1e]"
+            />
+          </div>
+        </div>
+
+        <!-- Lưới hiển thị Album ảnh -->
+        <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8"></div>
       </div>
     </div>
 
@@ -545,6 +608,116 @@
     </div>
   </div>
 
+  <!-- MODAL: ADD / EDIT ARCHIVE PHOTO (LĂNG MỘ TỔ & CON CHÁU) -->
+  <div id="photoModal" class="fixed inset-0 bg-black/60 backdrop-blur-[1px] z-50 hidden items-center justify-center p-3">
+    <div class="bg-[#fdfbf7] border-2 border-[#c59b27] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div class="bg-[#631212] text-[#fff8e7] px-5 py-3.5 flex items-center justify-between">
+        <h3 id="photoModalTitle" class="font-serif-trad font-bold text-base">Thêm Hình Ảnh Tư Liệu / Lăng Mộ Tổ</h3>
+        <button onclick="closePhotoModal()" class="text-[#f4e7be] hover:text-white text-xl leading-none">✕</button>
+      </div>
+
+      <form id="photoForm" onsubmit="submitPhotoForm(event)" class="p-5 overflow-y-auto space-y-3.5 text-xs">
+        <input type="hidden" id="editPhotoId" />
+
+        <!-- Khu vực tải ảnh & xem trước -->
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Tải ảnh từ máy tính/điện thoại hoặc dán đường dẫn URL *</label>
+          <div class="flex items-center gap-2">
+            <input id="pImageUrl" type="text" required oninput="updatePhotoPreview(this.value)" placeholder="Chọn ảnh bên cạnh (tự nén tối ưu) hoặc dán link https://..." class="flex-1 px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+            <label class="px-3.5 py-2 rounded-lg bg-[#c59b27] hover:bg-[#d8ad34] text-[#231914] font-bold cursor-pointer shrink-0 shadow-sm">
+              📷 Chọn ảnh
+              <input type="file" accept="image/*" onchange="handleArchivePhotoUpload(event)" class="hidden" />
+            </label>
+          </div>
+          <div id="photoPreviewBox" class="hidden mt-2 relative rounded-xl overflow-hidden border border-[#d8c7a8] bg-stone-900 max-h-52 flex items-center justify-center">
+            <img id="photoPreviewImg" src="" alt="Xem trước" class="max-h-52 w-auto object-contain" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Tiêu đề bức ảnh *</label>
+            <input id="pTitle" type="text" required placeholder="VD: Toàn cảnh Lăng mộ Thủy Tổ & con cháu tảo mộ" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Phân loại tư liệu</label>
+            <select id="pCategory" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]">
+              <option value="tomb">🪦 Lăng mộ Tổ (Thủy Tổ / Tiền Tổ / Các chi)</option>
+              <option value="descendants">👨‍👩‍👧‍👦 Con cháu bái yết / Tảo mộ</option>
+              <option value="shrine">🏯 Nhà thờ họ / Lễ chạp / Giỗ Tổ</option>
+              <option value="document">📜 Bia ký / Hoành phi / Sắc phong</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Thời gian chụp (Năm / Dịp lễ)</label>
+            <input id="pDateTaken" type="text" placeholder="VD: Thanh Minh 2026 / Tháng Chạp Ất Tỵ" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Địa điểm / Khu mộ</label>
+            <input id="pLocation" type="text" placeholder="VD: Khu lăng mộ họ Hà - Thôn Cao Bạt Nang" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]" />
+          </div>
+        </div>
+
+        <!-- Gắn liên kết tới Ngôi mộ của vị Tổ nào -->
+        <div class="bg-[#f5efe2] p-3 rounded-xl border border-[#e5d8c1] space-y-2.5">
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Liên kết trực tiếp tới Mộ phần của vị Tổ (nếu có)</label>
+            <select id="pRelatedAncestorId" class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]"></select>
+            <p class="text-[11px] text-[#6e5d52] mt-0.5">Ảnh này sẽ tự động hiển thị trong mục <strong>Mộ phần &amp; Hình ảnh</strong> khi mở hồ sơ của vị Tổ được chọn.</p>
+          </div>
+
+          <!-- Gắn thẻ con cháu đứng trong ảnh -->
+          <div>
+            <label class="block font-semibold text-[#631212] mb-1">Gắn thẻ con cháu đứng trong ảnh (chọn nhiều người)</label>
+            <div class="flex gap-1.5">
+              <select id="pTagMemberSelect" class="flex-1 px-3 py-1.5 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]"></select>
+              <button type="button" onclick="addTaggedMemberFromSelect()" class="px-3 py-1.5 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold shrink-0">
+                + Gắn thẻ
+              </button>
+            </div>
+            <div id="pTaggedChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-[#631212] mb-1">Chú thích chi tiết (Vị trí đứng từ trái sang phải, bối cảnh...)</label>
+          <textarea id="pCaption" rows="3" placeholder="VD: Hàng trước từ trái qua: ông Hà Văn Hùng, ông Hà Văn Dũng... chụp trước khu lăng mộ Thủy Tổ Hà Quý Công nhân dịp tu sửa lăng mộ." class="w-full px-3 py-2 rounded-lg border border-[#cbb796] bg-white focus:outline-none focus:border-[#8b1e1e]"></textarea>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-[#e5d8c1]">
+          <button type="button" onclick="closePhotoModal()" class="px-4 py-2 rounded-lg border border-[#cbb796] bg-white hover:bg-[#f5efe2] font-semibold">
+            Hủy bỏ
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold shadow">
+            Lưu hình ảnh tư liệu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LIGHTBOX XEM ẢNH PHÓNG TO -->
+  <div id="lightboxModal" onclick="if(event.target===this) closeLightbox()" class="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-6">
+    <div class="bg-[#fdfbf7] border-2 border-[#c59b27] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[94vh] flex flex-col overflow-hidden">
+      <div class="bg-[#631212] text-[#fff8e7] px-4 py-3 flex items-center justify-between">
+        <div class="min-w-0 pr-3">
+          <h3 id="lbTitle" class="font-serif-trad font-bold text-sm sm:text-base truncate">Chi tiết hình ảnh</h3>
+          <p id="lbMeta" class="text-[11px] text-[#f4e7be] truncate"></p>
+        </div>
+        <button onclick="closeLightbox()" class="text-[#f4e7be] hover:text-white text-xl leading-none shrink-0">✕</button>
+      </div>
+      <div class="bg-stone-950 flex-1 overflow-auto flex items-center justify-center p-2 min-h-[260px]">
+        <img id="lbImage" src="" alt="" class="max-h-[62vh] w-auto object-contain rounded" />
+      </div>
+      <div id="lbFooter" class="p-4 bg-[#fdfbf7] border-t border-[#e5d8c1] text-xs space-y-2 max-h-44 overflow-y-auto"></div>
+    </div>
+  </div>
+
   </div>
 
   <script>
@@ -635,9 +808,49 @@
     // 2. TRẠNG THÁI ỨNG DỤNG & SUPABASE CLIENT
     // =========================================================================
     const LOCAL_STORAGE_KEY = 'gia_pha_ho_ha_cao_bat_nang_v1';
+    const ARCHIVE_STORAGE_KEY = 'gia_pha_ho_ha_archive_photos_v1';
     const CLOUD_CONFIG_KEY = 'gia_pha_ho_ha_supabase_cfg_v1';
 
+    // Ảnh minh họa khung mẫu (người dùng có thể bấm Sửa để thay bằng ảnh thực tế)
+    const SAMPLE_TOMB_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f7edd6"/>
+            <stop offset="100%" stop-color="#e7d4ae"/>
+          </linearGradient>
+        </defs>
+        <rect width="800" height="480" fill="url(#sky)"/>
+        <path d="M0 320 Q200 260 400 310 T800 290 L800 480 L0 480 Z" fill="#c7b28a" opacity="0.45"/>
+        <rect x="190" y="150" width="420" height="210" rx="12" fill="#8b1e1e" stroke="#c59b27" stroke-width="5"/>
+        <polygon points="165,155 400,85 635,155" fill="#631212" stroke="#c59b27" stroke-width="4"/>
+        <rect x="330" y="190" width="140" height="145" rx="6" fill="#fdfbf7" stroke="#c59b27" stroke-width="3"/>
+        <text x="400" y="232" font-family="Georgia, serif" font-size="22" font-weight="bold" fill="#631212" text-anchor="middle">LĂNG MỘ TỔ</text>
+        <text x="400" y="262" font-family="sans-serif" font-size="15" fill="#231914" text-anchor="middle">HỌ HÀ - CAO BẠT NANG</text>
+        <text x="400" y="302" font-family="sans-serif" font-size="13" fill="#6e5d52" text-anchor="middle">[Khung mẫu — Nhấn "Sửa" để tải ảnh thật]</text>
+        <rect x="120" y="360" width="560" height="26" rx="4" fill="#7a6855"/>
+      </svg>
+    `);
+
+    const INITIAL_ARCHIVE_PHOTOS = [
+      {
+        id: 'photo_sample_tomb_1',
+        title: 'Khu Lăng Mộ Thủy Tổ Hà Quý Công & Con Cháu Bái Yết',
+        category: 'tomb',
+        dateTaken: 'Dịp Tảo Mộ / Lễ Chạp',
+        location: 'Nghĩa trang Họ Hà - Thôn Cao Bạt Nang',
+        relatedAncestorId: 'g1_thuy_to',
+        taggedMemberIds: ['g7_ha_van_hung', 'g7_ha_van_dung', 'g7_ha_van_hiep'],
+        imageUrl: SAMPLE_TOMB_SVG,
+        caption: 'Khung mẫu lưu trữ ảnh toàn cảnh lăng mộ Tổ và các thế hệ con cháu đứng chụp lưu niệm. Nhấn nút "Sửa" ở góc thẻ hoặc "+ Thêm hình ảnh tư liệu" để tải ảnh thực tế từ máy lên.',
+        isSample: true
+      }
+    ];
+
     let members = [];
+    let archivePhotos = [];
+    let archiveCategoryFilter = 'ALL';
+    let modalTaggedIds = [];
     let undoStack = [];
     let collapsedIds = new Set();
     let selectedMemberId = null;
@@ -733,6 +946,26 @@
         }
       } catch {}
       return JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+    }
+
+    function saveArchiveCache() {
+      try {
+        localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(archivePhotos));
+      } catch (e) {
+        alert('Dung lượng bộ nhớ trình duyệt đầy do ảnh quá lớn. Hãy chọn ảnh dung lượng nhẹ hơn hoặc dùng link ảnh.');
+        console.warn('Không thể lưu archivePhotos:', e);
+      }
+    }
+
+    function loadArchiveCache() {
+      try {
+        const raw = localStorage.getItem(ARCHIVE_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch {}
+      return JSON.parse(JSON.stringify(INITIAL_ARCHIVE_PHOTOS));
     }
 
     async function initSupabase(cfg) {
@@ -1276,6 +1509,40 @@
           <div class="flex justify-between gap-2"><span class="text-[#6e5d52]">Nơi an táng:</span><span class="font-semibold text-right">${escapeHtml(m.burialPlace || '—')}</span></div>
         </div>
 
+        ${(() => {
+          const linkedPhotos = archivePhotos.filter(p =>
+            p.relatedAncestorId === m.id || (Array.isArray(p.taggedMemberIds) && p.taggedMemberIds.includes(m.id))
+          );
+          return `
+            <div class="bg-[#fbf3e1] rounded-xl p-3 border border-[#d8c7a8] space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="font-bold text-[#631212] flex items-center gap-1">
+                  <span>🪦</span><span>Tư liệu Lăng mộ &amp; Ảnh liên quan (${linkedPhotos.length})</span>
+                </h4>
+                <button onclick="openPhotoModal(null, '${m.id}')" class="px-2 py-1 rounded-md bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold text-[11px]">
+                  + Thêm ảnh
+                </button>
+              </div>
+              ${linkedPhotos.length === 0
+                ? `<p class="text-[11px] text-[#6e5d52] italic">Chưa có ảnh lăng mộ hoặc ảnh chụp chung gắn với ${escapeHtml(m.name)}.</p>`
+                : `<div class="grid grid-cols-2 gap-2">
+                    ${linkedPhotos.map(p => `
+                      <div onclick="openLightbox('${p.id}')" class="group cursor-pointer rounded-lg overflow-hidden border border-[#cbb796] bg-white shadow-xs">
+                        <div class="aspect-video bg-stone-900 overflow-hidden">
+                          <img src="${p.imageUrl}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                        </div>
+                        <div class="p-1.5">
+                          <div class="font-semibold text-[11px] text-[#231914] truncate">${escapeHtml(p.title)}</div>
+                          <div class="text-[10px] text-[#6e5d52] truncate">${p.relatedAncestorId === m.id ? '🪦 Ảnh mộ phần' : '👤 Có mặt trong ảnh'}</div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>`
+              }
+            </div>
+          `;
+        })()}
+
         <div>
           <h4 class="font-bold text-[#631212] mb-1">Tiểu sử & Ghi chú</h4>
           <p class="bg-white p-3 rounded-xl border border-[#e5d8c1] leading-relaxed whitespace-pre-line">${escapeHtml(m.bio || 'Chưa có ghi chú tiểu sử.')}</p>
@@ -1547,22 +1814,380 @@
     function switchView(view) {
       currentView = view;
       const isTree = view === 'tree';
+      const isTable = view === 'table';
+      const isArchive = view === 'archive';
+
       document.getElementById('treeViewport').classList.toggle('hidden', !isTree);
       document.getElementById('treeToolbar').classList.toggle('hidden', !isTree);
-      document.getElementById('tableViewport').classList.toggle('hidden', isTree);
+      document.getElementById('tableViewport').classList.toggle('hidden', !isTable);
+      document.getElementById('archiveViewport').classList.toggle('hidden', !isArchive);
 
       const btnTree = document.getElementById('btnViewTree');
       const btnTable = document.getElementById('btnViewTable');
+      const btnArchive = document.getElementById('btnViewArchive');
 
-      if (isTree) {
-        btnTree.className = 'px-2.5 py-1.5 rounded-md font-semibold bg-[#c59b27] text-[#231914] transition';
-        btnTable.className = 'px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition';
-        renderTree();
-      } else {
-        btnTable.className = 'px-2.5 py-1.5 rounded-md font-semibold bg-[#c59b27] text-[#231914] transition';
-        btnTree.className = 'px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition';
-        renderTable();
+      const activeClass = 'px-2.5 py-1.5 rounded-md font-semibold bg-[#c59b27] text-[#231914] transition flex items-center gap-1';
+      const inactiveClass = 'px-2.5 py-1.5 rounded-md font-medium text-[#f9ebd2] hover:text-white transition flex items-center gap-1';
+
+      btnTree.className = isTree ? activeClass : inactiveClass;
+      btnTable.className = isTable ? activeClass : inactiveClass;
+      btnArchive.className = isArchive ? activeClass : inactiveClass;
+
+      if (isTree) renderTree();
+      else if (isTable) renderTable();
+      else if (isArchive) renderArchiveGallery();
+    }
+
+    // =========================================================================
+    // 7B. QUẢN LÝ ALBUM TƯ LIỆU LĂNG MỘ TỔ & CON CHÁU BÁI YẾT
+    // =========================================================================
+    const ARCHIVE_CATEGORY_META = {
+      tomb: { label: '🪦 Lăng mộ Tổ', badgeClass: 'bg-[#8b1e1e] text-[#fff8e7]' },
+      descendants: { label: '👨‍👩‍👧‍👦 Con cháu bái yết', badgeClass: 'bg-amber-800 text-amber-50' },
+      shrine: { label: '🏯 Nhà thờ họ / Lễ chạp', badgeClass: 'bg-emerald-900 text-emerald-50' },
+      document: { label: '📜 Bia ký / Sắc phong', badgeClass: 'bg-stone-800 text-stone-100' }
+    };
+
+    function setArchiveCategory(cat) {
+      archiveCategoryFilter = cat;
+      document.querySelectorAll('.archive-cat-btn').forEach(btn => {
+        const isCurrent = btn.getAttribute('data-acat') === cat;
+        btn.className = isCurrent
+          ? 'archive-cat-btn px-3 py-1.5 rounded-lg font-semibold bg-[#8b1e1e] text-white transition'
+          : 'archive-cat-btn px-3 py-1.5 rounded-lg font-medium bg-white hover:bg-[#efe6d5] border border-[#cbb796] transition';
+      });
+      renderArchiveGallery();
+    }
+
+    function renderArchiveGallery() {
+      const grid = document.getElementById('archiveGrid');
+      const countAllEl = document.getElementById('countCatAll');
+      if (countAllEl) countAllEl.textContent = archivePhotos.length;
+      if (!grid) return;
+
+      const q = (document.getElementById('archiveSearchInput')?.value || '').trim().toLowerCase();
+
+      const filtered = archivePhotos.filter(p => {
+        if (archiveCategoryFilter !== 'ALL' && p.category !== archiveCategoryFilter) return false;
+        if (!q) return true;
+        const ancestor = p.relatedAncestorId ? members.find(m => m.id === p.relatedAncestorId) : null;
+        const taggedNames = (p.taggedMemberIds || [])
+          .map(id => members.find(m => m.id === id)?.name || '')
+          .join(' ')
+          .toLowerCase();
+        return (
+          (p.title || '').toLowerCase().includes(q) ||
+          (p.location || '').toLowerCase().includes(q) ||
+          (p.caption || '').toLowerCase().includes(q) ||
+          (p.dateTaken || '').toLowerCase().includes(q) ||
+          (ancestor && ancestor.name.toLowerCase().includes(q)) ||
+          taggedNames.includes(q)
+        );
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-white rounded-2xl border-2 border-dashed border-[#cbb796] p-8 text-center space-y-2">
+            <div class="text-3xl">🖼️</div>
+            <h3 class="font-serif-trad font-bold text-base text-[#631212]">Chưa có hình ảnh nào trong mục này</h3>
+            <p class="text-xs text-[#6e5d52]">Nhấn nút <strong>"+ Thêm hình ảnh tư liệu"</strong> để tải ảnh lăng mộ Tổ hoặc ảnh con cháu chụp lưu niệm.</p>
+          </div>
+        `;
+        return;
       }
+
+      grid.innerHTML = filtered.map(p => {
+        const meta = ARCHIVE_CATEGORY_META[p.category] || ARCHIVE_CATEGORY_META.tomb;
+        const ancestor = p.relatedAncestorId ? members.find(m => m.id === p.relatedAncestorId) : null;
+        const taggedMembers = (p.taggedMemberIds || [])
+          .map(id => members.find(m => m.id === id))
+          .filter(Boolean);
+
+        return `
+          <article class="bg-white rounded-2xl border border-[#dfd2ba] shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
+            <div onclick="openLightbox('${p.id}')" class="relative aspect-[16/10] bg-stone-900 overflow-hidden cursor-pointer group">
+              <img src="${p.imageUrl}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+              <span class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow ${meta.badgeClass}">
+                ${meta.label}
+              </span>
+              ${p.isSample ? `<span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/70 text-[#f4e7be] text-[10px]">Khung mẫu</span>` : ''}
+            </div>
+
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-3 text-xs">
+              <div class="space-y-1.5">
+                <h3 onclick="openLightbox('${p.id}')" class="font-serif-trad font-bold text-sm text-[#231914] hover:text-[#8b1e1e] cursor-pointer leading-snug">
+                  ${escapeHtml(p.title)}
+                </h3>
+
+                <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[#6e5d52]">
+                  ${p.dateTaken ? `<span>📅 ${escapeHtml(p.dateTaken)}</span>` : ''}
+                  ${p.location ? `<span>📍 ${escapeHtml(p.location)}</span>` : ''}
+                </div>
+
+                ${ancestor ? `
+                  <div class="pt-1">
+                    <button onclick="selectMember('${ancestor.id}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#8b1e1e]/10 hover:bg-[#8b1e1e]/20 text-[#631212] font-semibold text-[11px] transition">
+                      <span>🪦 Mộ phần:</span><span>${escapeHtml(ancestor.name)} (Đời ${ancestor.generation})</span>
+                    </button>
+                  </div>
+                ` : ''}
+
+                ${p.caption ? `<p class="text-[#231914]/85 leading-relaxed line-clamp-3 pt-1">${escapeHtml(p.caption)}</p>` : ''}
+
+                ${taggedMembers.length > 0 ? `
+                  <div class="pt-1.5">
+                    <div class="text-[10.5px] font-semibold text-[#6e5d52] mb-1">Con cháu trong ảnh:</div>
+                    <div class="flex flex-wrap gap-1">
+                      ${taggedMembers.map(tm => `
+                        <button onclick="selectMember('${tm.id}')" class="px-2 py-0.5 rounded-full bg-[#f5efe2] hover:bg-[#e7dcc7] border border-[#cbb796] text-[#231914] font-medium text-[10.5px] transition">
+                          ${escapeHtml(tm.name)} (Đ${tm.generation})
+                        </button>
+                      `).join('')}
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+
+              <div class="pt-2.5 border-t border-[#efe6d5] flex items-center justify-between gap-2">
+                <button onclick="openLightbox('${p.id}')" class="px-2.5 py-1 rounded-lg bg-[#f5efe2] hover:bg-[#e7dcc7] text-[#631212] font-semibold">
+                  🔍 Phóng to
+                </button>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="openPhotoModal('${p.id}')" class="px-2.5 py-1 rounded-lg bg-[#8b1e1e] hover:bg-[#631212] text-white font-semibold">
+                    Sửa / Thay ảnh
+                  </button>
+                  <button onclick="deleteArchivePhoto('${p.id}')" class="px-2 py-1 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 font-semibold">
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function populatePhotoMemberSelects(selectedAncestorId = '') {
+      const sorted = [...members].sort((a, b) => a.generation - b.generation || a.name.localeCompare(b.name, 'vi'));
+
+      const ancSel = document.getElementById('pRelatedAncestorId');
+      ancSel.innerHTML = `<option value="">-- Không gắn riêng mộ vị Tổ nào (Ảnh chung dòng họ) --</option>` +
+        sorted.map(m => `<option value="${m.id}" ${m.id === selectedAncestorId ? 'selected' : ''}>Đời ${m.generation} — ${escapeHtml(m.name)}</option>`).join('');
+
+      const tagSel = document.getElementById('pTagMemberSelect');
+      tagSel.innerHTML = `<option value="">-- Chọn con cháu trong phả hệ để gắn thẻ --</option>` +
+        sorted.map(m => `<option value="${m.id}">Đời ${m.generation} — ${escapeHtml(m.name)}</option>`).join('');
+    }
+
+    function renderModalTaggedChips() {
+      const container = document.getElementById('pTaggedChips');
+      if (!container) return;
+      if (modalTaggedIds.length === 0) {
+        container.innerHTML = `<span class="text-[11px] text-[#6e5d52] italic">Chưa gắn thẻ thành viên nào.</span>`;
+        return;
+      }
+      container.innerHTML = modalTaggedIds.map(id => {
+        const m = members.find(x => x.id === id);
+        if (!m) return '';
+        return `
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-[#8b1e1e]/40 text-[#631212] font-semibold text-[11px]">
+            <span>${escapeHtml(m.name)} (Đời ${m.generation})</span>
+            <button type="button" onclick="removeTaggedMember('${id}')" class="text-red-600 hover:text-red-800 font-bold ml-0.5">✕</button>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function addTaggedMemberFromSelect() {
+      const sel = document.getElementById('pTagMemberSelect');
+      const id = sel.value;
+      if (!id) return;
+      if (!modalTaggedIds.includes(id)) {
+        modalTaggedIds.push(id);
+        renderModalTaggedChips();
+      }
+      sel.value = '';
+    }
+
+    function removeTaggedMember(id) {
+      modalTaggedIds = modalTaggedIds.filter(x => x !== id);
+      renderModalTaggedChips();
+    }
+
+    function updatePhotoPreview(url) {
+      const box = document.getElementById('photoPreviewBox');
+      const img = document.getElementById('photoPreviewImg');
+      if (url && url.trim()) {
+        img.src = url.trim();
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    // Tự động nén ảnh trước khi lưu để hiển thị mượt mà trên cả máy tính và điện thoại
+    function handleArchivePhotoUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_W = 1400;
+          let w = img.width;
+          let h = img.height;
+          if (w > MAX_W) {
+            h = Math.round((h * MAX_W) / w);
+            w = MAX_W;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          document.getElementById('pImageUrl').value = compressedDataUrl;
+          updatePhotoPreview(compressedDataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openPhotoModal(photoId = null, presetMemberId = null) {
+      const modal = document.getElementById('photoModal');
+      document.getElementById('photoForm').reset();
+      document.getElementById('editPhotoId').value = photoId || '';
+
+      if (photoId) {
+        const p = archivePhotos.find(x => x.id === photoId);
+        if (!p) return;
+        document.getElementById('photoModalTitle').textContent = 'Cập Nhật Hình Ảnh Tư Liệu';
+        document.getElementById('pImageUrl').value = p.imageUrl || '';
+        document.getElementById('pTitle').value = p.title || '';
+        document.getElementById('pCategory').value = p.category || 'tomb';
+        document.getElementById('pDateTaken').value = p.dateTaken || '';
+        document.getElementById('pLocation').value = p.location || '';
+        document.getElementById('pCaption').value = p.caption || '';
+        modalTaggedIds = Array.isArray(p.taggedMemberIds) ? [...p.taggedMemberIds] : [];
+        populatePhotoMemberSelects(p.relatedAncestorId || '');
+        updatePhotoPreview(p.imageUrl || '');
+      } else {
+        document.getElementById('photoModalTitle').textContent = 'Thêm Hình Ảnh Tư Liệu / Lăng Mộ Tổ';
+        document.getElementById('pLocation').value = 'Nghĩa trang Họ Hà - Thôn Cao Bạt Nang';
+        modalTaggedIds = [];
+        let defaultAnc = '';
+        if (presetMemberId) {
+          const target = members.find(x => x.id === presetMemberId);
+          if (target && target.generation <= 4) defaultAnc = target.id;
+          else if (target) modalTaggedIds.push(target.id);
+        }
+        populatePhotoMemberSelects(defaultAnc);
+        updatePhotoPreview('');
+      }
+
+      renderModalTaggedChips();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePhotoModal() {
+      const modal = document.getElementById('photoModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function submitPhotoForm(event) {
+      event.preventDefault();
+      const editId = document.getElementById('editPhotoId').value;
+      const imageUrl = document.getElementById('pImageUrl').value.trim();
+      const title = document.getElementById('pTitle').value.trim();
+      if (!imageUrl || !title) return;
+
+      const payload = {
+        title,
+        category: document.getElementById('pCategory').value,
+        dateTaken: document.getElementById('pDateTaken').value.trim(),
+        location: document.getElementById('pLocation').value.trim(),
+        relatedAncestorId: document.getElementById('pRelatedAncestorId').value || '',
+        taggedMemberIds: [...modalTaggedIds],
+        imageUrl,
+        caption: document.getElementById('pCaption').value.trim(),
+        isSample: false
+      };
+
+      if (editId) {
+        const idx = archivePhotos.findIndex(x => x.id === editId);
+        if (idx !== -1) {
+          archivePhotos[idx] = { ...archivePhotos[idx], ...payload };
+        }
+      } else {
+        archivePhotos.unshift({
+          id: 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+          ...payload
+        });
+      }
+
+      saveArchiveCache();
+      closePhotoModal();
+      renderArchiveGallery();
+      if (selectedMemberId) {
+        const m = members.find(x => x.id === selectedMemberId);
+        if (m) renderDetailDrawer(m);
+      }
+    }
+
+    function deleteArchivePhoto(id) {
+      const p = archivePhotos.find(x => x.id === id);
+      if (!p) return;
+      if (!confirm(`Xóa hình ảnh "${p.title}" khỏi kho tư liệu?`)) return;
+      archivePhotos = archivePhotos.filter(x => x.id !== id);
+      saveArchiveCache();
+      renderArchiveGallery();
+      if (selectedMemberId) {
+        const m = members.find(x => x.id === selectedMemberId);
+        if (m) renderDetailDrawer(m);
+      }
+    }
+
+    function openLightbox(photoId) {
+      const p = archivePhotos.find(x => x.id === photoId);
+      if (!p) return;
+      const meta = ARCHIVE_CATEGORY_META[p.category] || ARCHIVE_CATEGORY_META.tomb;
+      const ancestor = p.relatedAncestorId ? members.find(m => m.id === p.relatedAncestorId) : null;
+      const taggedMembers = (p.taggedMemberIds || [])
+        .map(id => members.find(m => m.id === id))
+        .filter(Boolean);
+
+      document.getElementById('lbTitle').textContent = p.title;
+      document.getElementById('lbMeta').textContent = [meta.label, p.dateTaken, p.location].filter(Boolean).join(' • ');
+      document.getElementById('lbImage').src = p.imageUrl;
+
+      document.getElementById('lbFooter').innerHTML = `
+        ${p.caption ? `<p class="text-[#231914] leading-relaxed">${escapeHtml(p.caption)}</p>` : ''}
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          ${ancestor ? `
+            <button onclick="closeLightbox(); selectMember('${ancestor.id}')" class="px-2.5 py-1 rounded-lg bg-[#8b1e1e] text-white font-semibold">
+              🪦 Xem hồ sơ ${escapeHtml(ancestor.name)} (Đời ${ancestor.generation})
+            </button>
+          ` : ''}
+          ${taggedMembers.map(tm => `
+            <button onclick="closeLightbox(); selectMember('${tm.id}')" class="px-2.5 py-1 rounded-full bg-[#f5efe2] hover:bg-[#e7dcc7] border border-[#cbb796] font-semibold">
+              👤 ${escapeHtml(tm.name)} (Đời ${tm.generation})
+            </button>
+          `).join('')}
+        </div>
+      `;
+
+      const lb = document.getElementById('lightboxModal');
+      lb.classList.remove('hidden');
+      lb.classList.add('flex');
+    }
+
+    function closeLightbox() {
+      const lb = document.getElementById('lightboxModal');
+      lb.classList.add('hidden');
+      lb.classList.remove('flex');
     }
 
     function renderTable() {
@@ -1628,7 +2253,13 @@
     }
 
     function exportJSON() {
-      const blob = new Blob([JSON.stringify(members, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const backupPayload = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        members,
+        archivePhotos
+      };
+      const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1644,18 +2275,24 @@
       reader.onload = async () => {
         try {
           const parsed = JSON.parse(reader.result);
-          if (!Array.isArray(parsed) || parsed.length === 0) {
+          const importedMembers = Array.isArray(parsed) ? parsed : parsed?.members;
+          if (!Array.isArray(importedMembers) || importedMembers.length === 0) {
             alert('File JSON không hợp lệ hoặc rỗng.');
             return;
           }
           pushUndoSnapshot();
-          members = parsed;
+          members = importedMembers;
           saveLocalCache();
+          if (Array.isArray(parsed?.archivePhotos)) {
+            archivePhotos = parsed.archivePhotos;
+            saveArchiveCache();
+          }
           renderAll();
+          if (currentView === 'archive') renderArchiveGallery();
           if (supabaseClient) {
             await supabaseClient.from('family_members').upsert(members.map(memberToRow));
           }
-          alert('Đã nhập thành công ' + members.length + ' thành viên.');
+          alert('Đã nhập thành công ' + members.length + ' thành viên' + (Array.isArray(parsed?.archivePhotos) ? ` và ${parsed.archivePhotos.length} hình ảnh tư liệu.` : '.'));
         } catch (err) {
           alert('Lỗi đọc file JSON: ' + err.message);
         }
@@ -1881,6 +2518,7 @@
     // =========================================================================
     (async function boot() {
       members = loadLocalCache();
+      archivePhotos = loadArchiveCache();
       renderAll();
 
       // Tự nhận diện màn hình điện thoại khi mở lần đầu
